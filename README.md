@@ -1,4 +1,4 @@
-# TwinCAT-RS485-HausBus_libary
+# TwinCAT3-RS485-HausBus_libary
 Twincat Lib für die Kommunikation mit Haus-Bus Geräten über RS485
 
 Implementierte und getestete Geräte:
