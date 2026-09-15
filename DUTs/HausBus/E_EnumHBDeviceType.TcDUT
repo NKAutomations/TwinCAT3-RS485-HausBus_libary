@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_EnumHBDeviceType" Id="{306e1b0a-ffe6-4d00-a20c-57984cc3fdd4}">
+    <Declaration><![CDATA[TYPE E_EnumHBDeviceType :
+(
+	E_HB_Device_NV ,
+	E_HB_Device_6FTaster,
+	E_HB_Device_16FRelais,
+	E_HB_Device_6FDimmer,
+	E_HB_Device_CYD_1
+	
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

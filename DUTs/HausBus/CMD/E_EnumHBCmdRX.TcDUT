@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <DUT Name="E_EnumHBCmdRX" Id="{1815257c-c88d-4dba-afb6-8eaf368370b1}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_EnumHBCmdRX :
+(	
+	E_HB_CMD_STATUS := 0,		(* STATUS*)
+	E_HB_CMD_rSTATUS := 10,		(* rSTATUS*)
+	E_HB_CMD_rCONFIG := 11		(* rCONFIG*)
+);
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

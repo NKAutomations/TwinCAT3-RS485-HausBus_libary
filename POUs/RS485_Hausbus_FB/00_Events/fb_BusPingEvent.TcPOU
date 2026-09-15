@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="fb_BusPingEvent" Id="{b07ed474-f0db-45c9-bf2c-2641b67dcd51}" SpecialFunc="None">
+    <Declaration><![CDATA[(*======================================================================================================================================*)
+(*//=============================================================================\\
+||  _   _ _  __  _         _                        _   _                      ||
+|| | \ | | |/ / / \  _   _| |_ ___  _ __ ___   __ _| |_(_) ___  _ __         ||
+|| |  \| | ' / / _ \| | | | __/ _ \| '_ ` _ \ / _` | __| |/ _ \| '_ \        ||
+|| | |\  | . \/ ___ \ |_| | || (_) | | | | | | (_| | |_| | (_) | | | |       ||
+|| |_| \_|_|\_\_/  \_\__,_|\__\___/|_| |_| |_|\__,_|\__|_|\___/|_| |_|       ||
+||                                                                             ||
+\\=============================================================================//
+fb_BusPingEvent:				Dieser Baustein sieht Ping Events.  *)
+(*
+Date          	| Version    	| created under        	| Author          	| Remark *)
+(*====================================================================================================================================================*)
+(*29/04/2025   	| 1.00      		| TC3		  		| N.Kersting       | first release *)
+(*14/08/2025   	| 1.01      		| TC3		  		| N.Kersting       | Startup Schrittkette Implementiert um Effizienter zu werden*)
+(*27/08/2025   	| 1.02      		| TC3		  		| N.Kersting       | Reset hinzugefügt / Startup Done Ausgang *)
+(*03/09/2025   	| 1.03      		| TC3		  		| N.Kersting       | Wenn der Wert sich erneuert, wird die Zeit gemessen zwischen den Updates *)
+(*07/09/2025   	| 1.04      		| TC3		  		| N.Kersting       | Zykluszeit Optimierung, es wird nur gelesen, wenn String gefüllt ist *)
+(*09/09/2025   	| 1.05      		| TC3		  		| N.Kersting       | Zykluszeit Optimierung, Wirklich nur einen Zyklus suchen *)
+(*25/01/2026   	| 2.00      		| TC3		  		| N.Kersting       | Suchstring umstellung auf ASCII_RS485 Funktion *)
+(*30/06/2026   	| 2.00      		| TC3		  		| N.Kersting       | Bei Leerstring zurücksetzen für Flankenwechsel *)
+(*====================================================================================================================================================*)
+FUNCTION_BLOCK fb_BusPingEvent
+VAR_INPUT
+	 I_bExecute				:BOOL := TRUE;	// Aktiviert den Baustein 
+	 I_diID        			:DINT;     // Geräte-ID (z.B. '12345')
+	 I_sReceivedString		:STRING(255);	
+	 I_bReset				:BOOL;
+END_VAR
+VAR_OUTPUT
+	Q_bOut					:BOOL;
+	Q_bStartupDone			:BOOL;
+	Q_tUpdate				:TIME;
+	Q_sLastUpdate			:STRING(12);
+END_VAR
+VAR
+	findString0				:STRING(255) ;
+	
+	bStartupStart			:BOOL;
+	bStartupDone			:BOOL;
+	
+	iStartup				:INT;
+	fbtimeDiff				:fb_timeDiffLite_libversion;
+		
+	sLastString				:STRING(255);
+	bNeedProcess			:BOOL;
+	
+	tofVerz					:tof;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+(* Automatische Fehlererkennung *)
+IF NOT I_bExecute
+	OR (I_diID = 0)
+THEN
+	iStartup := 0;
+END_IF
+
+(* Warten, ob der String sich geändert hat*)
+bNeedProcess :=	(I_sReceivedString <> sLastString) 
+				AND (I_sReceivedString <> '');
+
+CASE iStartup OF 
+(*=====================================*)
+0 :	(* INIT *)
+	bStartupDone := FALSE;
+	bStartupStart := FALSE;
+	Q_bOut := FALSE;
+	bNeedProcess := FALSE;
+	sLastString := '';
+	
+	IF I_bExecute
+		AND NOT bStartupDone
+		AND NOT I_bReset
+		AND (I_diID <> 0)
+	THEN
+		bStartupStart := TRUE;
+		iStartup := iStartup +10;
+	END_IF
+	
+(*=====================================*)
+10 :(* String vorbereiten *)	
+	
+	findString0 := F_RS485HB_TO_ASCII_RX_PING(
+						I_diID			:= I_diID);
+						
+	iStartup := 999;
+	
+(*=====================================*)
+999 :(* READY *)
+	bStartupDone := TRUE;
+	
+	IF I_bReset
+	THEN
+		iStartup := 0;
+	ELSE
+		IF bNeedProcess
+		THEN
+			IF 	FIND(I_sReceivedString,findString0) >0 
+			THEN
+				Q_sLastUpdate :=	sGlobClock_SMH;	(* Globale Uhrzeit SMH nur bei Ping vorhanden*)
+				Q_bOut := TRUE;
+			ELSE
+				Q_bOut := FALSE;
+			END_IF
+			
+			sLastString :=	I_sReceivedString;	(* Letzten String Speichern *)
+		ELSE
+			(* Neu: Wenn Leerstring, soll zurückgesetzt werden sonst gibt es keinen Flankenwechsel *)
+			IF (I_sReceivedString = '') 
+			THEN
+				Q_bOut := FALSE;
+			END_IF
+		END_IF
+	END_IF
+	
+END_CASE
+
+Q_bStartupDone := bStartupDone;
+
+(*=====================================*)
+(* Zeitmessung zwischen den Updates *)
+fbtimeDiff(
+	I_bStart:= 			Q_bOut, 
+	I_bReset:= 			I_bReset, 
+	Q_tDiffTime=>		Q_tUpdate);]]></ST>
+    </Implementation>
+    <LineIds Name="fb_BusPingEvent">
+      <LineId Id="1207" Count="3" />
+      <LineId Id="1212" Count="6" />
+      <LineId Id="1458" Count="0" />
+      <LineId Id="1220" Count="12" />
+      <LineId Id="1234" Count="6" />
+      <LineId Id="1266" Count="0" />
+      <LineId Id="1357" Count="1" />
+      <LineId Id="1400" Count="0" />
+      <LineId Id="1267" Count="11" />
+      <LineId Id="1284" Count="8" />
+      <LineId Id="1450" Count="0" />
+      <LineId Id="1455" Count="0" />
+      <LineId Id="1451" Count="1" />
+      <LineId Id="1454" Count="0" />
+      <LineId Id="1453" Count="0" />
+      <LineId Id="1293" Count="11" />
+      <LineId Id="534" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

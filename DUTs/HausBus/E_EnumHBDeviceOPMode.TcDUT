@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="E_EnumHBDeviceOPMode" Id="{216af0cc-0340-4699-97a6-7d0cf4469d13}">
+    <Declaration><![CDATA[
+TYPE E_EnumHBDeviceOPMode :
+(
+	E_HB_Device_Init,
+	E_HB_Device_CheckID,
+	E_HB_Device_EventStartup,
+	E_HB_Device_Reset,
+	E_HB_Device_WaitCom,
+	E_HB_Device_Startup,
+	E_HB_Device_OP
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

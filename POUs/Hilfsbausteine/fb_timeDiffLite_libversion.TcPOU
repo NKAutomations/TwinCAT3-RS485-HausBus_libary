@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <POU Name="fb_timeDiffLite_libversion" Id="{c07171d1-5f86-476d-b836-6c646ec75bde}" SpecialFunc="None">
+    <Declaration><![CDATA[(*======================================================================================================================================*)
+(*fb_timeDiffLite:	Neuer einfacherer Baustein, welcher nur über Start funktioniert *)
+(*
+Date          	| Version    	| created under        	| Author          	| Remark *)
+(*======================================================================================================================================*)
+(*03/09/2025   	| 1.00      	| TC3		  			| N.Kersting       | first release *)
+(*======================================================================================================================================*)
+FUNCTION_BLOCK fb_timeDiffLite_libversion
+VAR_INPUT
+	I_bStart	:BOOL;
+	I_bReset	:BOOL;
+END_VAR
+VAR_OUTPUT
+	Q_tDiffTime	:TIME;
+END_VAR
+VAR
+	tStart	:TIME;
+	tStop	:TIME;
+
+	rTrigStart:	R_TRIG;
+	rTrigStop:	R_TRIG;
+	bMem: BOOL;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[rTrigStart(CLK:=I_bStart);
+
+IF	I_bReset	
+THEN	
+	bMem := FALSE;
+	tStart:= T#0S;
+	tStop:=T#0S;
+ELSE
+	
+	IF	rTrigStart.Q	
+		AND bMem
+	THEN	
+		bMem := FALSE; 
+		tStart:= TIME();
+		Q_tDiffTime:=	tStart-tStop;
+	END_IF
+
+	IF	rTrigStart.Q
+		AND NOT bMem	
+	THEN	
+		bMem := TRUE;
+		tStop:=	TIME();
+	END_IF
+END_IF]]></ST>
+    </Implementation>
+    <LineIds Name="fb_timeDiffLite_libversion">
+      <LineId Id="33" Count="0" />
+      <LineId Id="35" Count="1" />
+      <LineId Id="53" Count="0" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="37" Count="1" />
+      <LineId Id="111" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="107" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="41" Count="1" />
+      <LineId Id="112" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

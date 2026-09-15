@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <GVL Name="GVL_HausBus_ASCII_CONSTANT" Id="{9ceb6fa8-e01a-436e-9989-9ea84c9864a0}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL CONSTANT
+(*==================================================================*)
+(* Bibliothek aller ASCII Befehle für alle HAUS-BUS Komponenten *)
+(*==================================================================*)
+
+HB_UNIT_SYS : STRING(3) := 'SYS';	(* <SYS>	System *)
+HB_UNIT_BRS : STRING(3) := 'BRS';	(* <BRS>	Helligkeit *)
+HB_UNIT_BTN : STRING(3) := 'BTN';	(* <BTN>	Button *)
+HB_UNIT_DIM : STRING(3) := 'DIM';	(* <DIM>	Dimmer *)
+HB_UNIT_LED : STRING(3) := 'LED';	(* <LED>	LED/ Ausgang Taster *)
+HB_UNIT_OUT : STRING(3) := 'OUT';	(* <OUT>	Ausgang z.B. Relaismodule  *)
+HB_UNIT_RHD : STRING(3) := 'RHD';	(* <RHD>	Luftfeuchtigkeit  *)
+HB_UNIT_TMP : STRING(3) := 'TMP';	(* <TMP>	Temperatur  *)
+HB_UNIT_LBN : STRING(3) := 'LBN';	(* <LBN>	Hintergrundbeleuchtung (Von Taster) *)
+
+HB_CMD_RESET 	: STRING(7) := 'RESET';		(* <RESET>		Reset des Devices anfordern *)
+HB_CMD_gCONFIG 	: STRING(7) := 'gCONFIG';	(* <gCONFIG> 	Config abfragen *)
+HB_CMD_gSTATUS 	: STRING(7) := 'gSTATUS';	(* <gSTATUS> 	STATUS abfragen *)
+HB_CMD_OFF	 	: STRING(7) := 'OFF';		(* <OFF>		Off Befehl mit Steuerung über Parameter *)
+HB_CMD_ON	 	: STRING(7) := 'ON';		(* <ON>			ON Befehl mit Steuerung über Parameter *)
+HB_CMD_SET_CFG 	: STRING(7) := 'SET_CFG';	(* <SET_CFG>	Setze Config  *)
+HB_CMD_SET_MBR 	: STRING(7) := 'SET_MBR';	(* <SET_MBR>	Setze Hintergrundhelligkeit *)
+HB_CMD_ON_NP 	: STRING(7) := 'ON';		(* <ON>			SONDERFUNKTION! Besitzt keine Parameter!  *)
+HB_CMD_ON_OFF 	: STRING(7) := '';			(* <ON>			SONDERFUNKTION! Wird über den Parametereingang gesteuert! Wenn P=1 dann 'ON'  wenn P=2 dann 'OFF' *)
+
+HB_RX_rCONFIG	: STRING(7) := 'rCONFIG';	(* <rCONFIG>	Empfang von Config *)
+HB_RX_STATUS	: STRING(7) := 'STATUS';	(* <STATUS>		Empfang von Statusnachricht *)
+HB_RX_rSTATUS	: STRING(7) := 'rSTATUS';	(* <rSTATUS>	Empfang von Statusantwort *)
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>
