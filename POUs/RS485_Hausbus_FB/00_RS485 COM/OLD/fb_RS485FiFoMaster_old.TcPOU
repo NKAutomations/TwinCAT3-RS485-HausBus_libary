@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
-  <POU Name="fb_RS485FiFoMaster" Id="{35443bfd-a5e9-4472-8377-ccd124575ed5}" SpecialFunc="None">
+  <POU Name="fb_RS485FiFoMaster_old" Id="{abb7ee14-f2e6-4645-9657-7cebd7b41d33}" SpecialFunc="None">
     <Declaration><![CDATA[(*======================================================================================================================================*)
 (*//=============================================================================\\
 ||  _   _ _  __  _         _                        _   _                      ||
@@ -29,9 +29,8 @@ Date          	| Version    	| created under        	| Author          	| Remark
 (*09/06/2026   	| 2.05      		| TC3		  		| N.Kersting       | Obergrenze für Max Rows FiFo nun fix auf Globalen Wert *)
 (*09/06/2026   	| 2.06      		| TC3		  		| N.Kersting       | Integration I_nMaxDevices*)
 (*16/09/2026   	| 2.07      		| TC3		  		| N.Kersting       | Collision Detection eingang*)
-(*16/09/2026   	| 2.07      		| TC3		  		| N.Kersting       | Sende und Empfangsoptimierung*)
 (*====================================================================================================================================================*)
-FUNCTION_BLOCK fb_RS485FiFoMaster
+FUNCTION_BLOCK fb_RS485FiFoMaster_old
 VAR_INPUT
 	I_nMaxDevices				:INT := cMaxRowCMDFiFo;
 	I_sSendCmdFiFo				:ARRAY[1..cMaxRowCMDFiFo] OF STRING(255);
@@ -105,9 +104,6 @@ VAR
 	i,h							:INT;
 	iStepFiFo					:INT;
 	iPingRow					:INT;
-	iSendRetry						:INT;
-	iRetryStep						:INT;
-	iMaxSendRetry					:INT := 3;
 (*==========================================================================================================*)		
 
 	tonCollisionFree			:ton;	
@@ -115,7 +111,6 @@ VAR
 	tonPingIntervall			:ton;
 	tonPingVerz					:ton;
 	tonSend						:ton;
-	tonRetryDelay					:ton;
 (*==========================================================================================================*)		
 	rTrigSendManuell			:r_Trig;
 	rTrigSendSearchMode			:r_trig;
@@ -137,16 +132,17 @@ tonTimeout(
 	PT:=T#1S);
 	
 (*============================================================================================*)		
-(* Collision detection, soll verhindern, dass nicht gesendet wird, wenn Daten im Empfangspuffer sind *)
+(* Collision detection, soll verhinddern, dass nicht gesendet wird, wenn Daten im Empfangsüpuffer sind *)
 bUseRXCollisionDetection := I_bUseRXCollisionDetection;
 bUseTXCollisionDetection := I_bUseTXCollisionDetection;
 
 (* Receive Collision Dectetion *)
-bRXCollisionDetected :=	(I_pRxBuffer^.Count > 0
+bRXCollisionDetected :=	(I_pRxBuffer^.Count > INT_TO_UINT(iMaxBufferBlocking) 
+						OR I_pRxBuffer^.FreeByte < (301 -INT_TO_UINT(iMaxBufferBlocking))
 						OR I_pRxBuffer^.blocked
-						OR I_pRxBuffer^.Error <> 0)
-						(* Ein empfangenes Telegramm ist keine Kollision. *)
-						(*OR sReceivedString <> '')*)
+						OR I_pRxBuffer^.Error <> 0
+						OR fbReceive.StringReceived
+						(*OR sReceivedString <> ''*))
 						AND bUseRXCollisionDetection;
 						
 (* Transmit Collision Detection *)
@@ -174,10 +170,6 @@ tonPingIntervall(
 
 tonPingVerz(
 	PT := T#100MS);	
-
-tonRetryDelay(
-	IN := iStepFiFo = 4,
-	PT := T#20MS);
 	
 (*============================================================================================*)	
 (* Busbelastungstest *)	
@@ -209,7 +201,6 @@ CASE iStepFiFo OF
 	bFirstCycle := FALSE;
 	Q_bBusy := FALSE;
 	bPingStart := FALSE;
-	iSendRetry := 0;
 	iFiFoRow := 1;
 	iPingRow := 1;
 	
@@ -296,7 +287,6 @@ CASE iStepFiFo OF
 	
 (*============================================================================================*)	
 1:	sStep := 'Prüfen ob STRING in FiFo Zeile gefüllt*';
-	iSendRetry := 0;
 	
 	IF I_bSearchMode
 	THEN
@@ -396,37 +386,12 @@ CASE iStepFiFo OF
 		sStep := CONCAT('ERROR-',sStep);
 		sStep := CONCAT(sStep,'- ');
 		sStep := CONCAT(sStep,INT_TO_STRING(fbSend.Error));
-		IF iSendRetry < iMaxSendRetry
-		THEN
-			iSendRetry := iSendRetry + 1;
-			iRetryStep := 2;
-			bStringSend := FALSE;
-			iStepFiFo := 4;	(* Auftrag nach kurzer Pause erneut versuchen *)
-		ELSE
-			iStepFiFo := -2;
-		END_IF
+		iStepFiFo := -2;
 	ELSIF
 		tonTimeout.Q
 	THEN
 		sStep := CONCAT('ERROR- Timeout',sStep);
-		IF iSendRetry < iMaxSendRetry
-		THEN
-			iSendRetry := iSendRetry + 1;
-			iRetryStep := 2;
-			bStringSend := FALSE;
-			iStepFiFo := 4;	(* Auftrag nach kurzer Pause erneut versuchen *)
-		ELSE
-			iStepFiFo := -2;
-		END_IF
-	END_IF
-
-(*============================================================================================*)
-4:	sStep := 'Sendeauftrag erneut versuchen';
-
-	IF tonRetryDelay.Q
-	THEN
-		bStringSend := TRUE;
-		iStepFiFo := iRetryStep;
+		iStepFiFo := -2;
 	END_IF
 	
 (*============================================================================================*)		
@@ -454,7 +419,6 @@ CASE iStepFiFo OF
 (* Ping Senden Ablauf *)
 (*============================================================================================*)	
 10:	sStep := 'Sende Ping*';
-	iSendRetry := 0;
 	
 	tonPingVerz.IN := FALSE;
 	
@@ -481,7 +445,7 @@ CASE iStepFiFo OF
 		THEN
 			sStep := 'Prüfe ob Senden noch aktiv ist';
 			bStringSend := TRUE;
-			sString := sStringSend;
+			sString :=	sStringSend;
 			Q_bDone := FALSE;
 			Q_bError := FALSE;
 			iStepFiFo := iStepFiFo+1;
@@ -512,28 +476,12 @@ CASE iStepFiFo OF
 		sStep := CONCAT('ERROR-',sStep);
 		sStep := CONCAT(sStep,'- ');
 		sStep := CONCAT(sStep,INT_TO_STRING(fbSend.Error));
-		IF iSendRetry < iMaxSendRetry
-		THEN
-			iSendRetry := iSendRetry + 1;
-			iRetryStep := 11;
-			bStringSend := FALSE;
-			iStepFiFo := 4;	(* Ping nach kurzer Pause erneut versuchen *)
-		ELSE
-			iStepFiFo := -2;
-		END_IF
+		iStepFiFo := -2;
 	ELSIF
 		tonTimeout.Q
 	THEN
 		sStep := CONCAT('ERROR- Timeout',sStep);
-		IF iSendRetry < iMaxSendRetry
-		THEN
-			iSendRetry := iSendRetry + 1;
-			iRetryStep := 11;
-			bStringSend := FALSE;
-			iStepFiFo := 4;	(* Ping nach kurzer Pause erneut versuchen *)
-		ELSE
-			iStepFiFo := -2;
-		END_IF
+		iStepFiFo := -2;
 	END_IF
 	
 (*============================================================================================*)		
@@ -602,14 +550,7 @@ ELSE
 END_CASE
 
 (*============================================================================================*)	
-(* Empfang und Senden unabhängig voneinander bearbeiten.
-   Der RX-Parser muss auch während eines TX-Auftrages laufen,
-   damit spontane Tastertelegramme nicht im Empfangspuffer warten. *)
-IF bActivateReceive
-THEN
-	ac00_Receive();
-END_IF
-
+(* Nur Senden, wenn nicht Empfangen wird *)
 IF bStringSend
 THEN
 	IF bActivateSend
@@ -618,6 +559,13 @@ THEN
 		fbSend(
 			SendString:= 	sString,
 			TXbuffer:= 		I_pTxBuffer^);
+	END_IF
+	
+ELSE
+	IF bActivateReceive
+	THEN
+		(* Empfangen *)
+		ac00_Receive();
 	END_IF
 END_IF
 
@@ -650,7 +598,7 @@ fbRS485Logger(
 	I_sTxTelegram:= 	sString,
 	I_sRxTelegram:= 	sReceivedMEMString);]]></ST>
     </Implementation>
-    <Action Name="ac00_Receive" Id="{2d05ea0d-8609-48f0-afa5-2218b8a98750}">
+    <Action Name="ac00_Receive" Id="{c12285ff-9b41-4e09-9783-e6434850ec65}">
       <Implementation>
         <ST><![CDATA[(*============================================================================================*)	
 (* Empfangen *)
@@ -681,7 +629,7 @@ CASE iStepReceive OF
 END_CASE]]></ST>
       </Implementation>
     </Action>
-    <Action Name="ac99_Diagnose" Id="{13888323-b88f-40dc-8880-dc2aa338cae3}">
+    <Action Name="ac99_Diagnose" Id="{729e27f4-8df9-41ab-a478-b2f1a8116421}">
       <Implementation>
         <ST><![CDATA[(*============================================================================================*)	
 (* Busauslastung Prüfen *)
@@ -705,7 +653,7 @@ fbRS485Search(
 	Q_sSearchString=> );]]></ST>
       </Implementation>
     </Action>
-    <LineIds Name="fb_RS485FiFoMaster">
+    <LineIds Name="fb_RS485FiFoMaster_old">
       <LineId Id="676" Count="0" />
       <LineId Id="1683" Count="0" />
       <LineId Id="681" Count="0" />
@@ -995,26 +943,8 @@ fbRS485Search(
       <LineId Id="1934" Count="0" />
       <LineId Id="1932" Count="0" />
       <LineId Id="1002" Count="0" />
-      <LineId Id="474" Count="11" />
-      <LineId Id="2694" Count="0" />
-      <LineId Id="487" Count="1" />
-      <LineId Id="2695" Count="1" />
-      <LineId Id="491" Count="1" />
-      <LineId Id="2697" Count="0" />
-      <LineId Id="494" Count="4" />
-      <LineId Id="2698" Count="0" />
-      <LineId Id="500" Count="2" />
-      <LineId Id="2699" Count="0" />
-      <LineId Id="504" Count="0" />
-      <LineId Id="2700" Count="2" />
-      <LineId Id="508" Count="0" />
-      <LineId Id="2703" Count="5" />
-      <LineId Id="515" Count="2" />
-      <LineId Id="2709" Count="0" />
-      <LineId Id="519" Count="0" />
-      <LineId Id="2" Count="0" />
     </LineIds>
-    <LineIds Name="fb_RS485FiFoMaster.ac00_Receive">
+    <LineIds Name="fb_RS485FiFoMaster_old.ac00_Receive">
       <LineId Id="25" Count="2" />
       <LineId Id="2" Count="0" />
       <LineId Id="4" Count="14" />
@@ -1024,7 +954,7 @@ fbRS485Search(
       <LineId Id="57" Count="0" />
       <LineId Id="1" Count="0" />
     </LineIds>
-    <LineIds Name="fb_RS485FiFoMaster.ac99_Diagnose">
+    <LineIds Name="fb_RS485FiFoMaster_old.ac99_Diagnose">
       <LineId Id="8" Count="1" />
       <LineId Id="11" Count="0" />
       <LineId Id="2" Count="3" />

@@ -53,11 +53,14 @@ Date          	| Version    	| created under        	| Author          	| Remark
 (*16/09/2026   	| 8.02      		| TC3		  		| N.Kersting       | I_bInputStateCheck hinzugefügt*)
 (*16/09/2026   	| 8.03      		| TC3		  		| N.Kersting       | Schrittketten Bugfix *)
 (*16/09/2026   	| 8.04      		| TC3		  		| N.Kersting       | Externe event ID bugfix *)
+(*16/09/2026   	| 8.05      		| TC3		  		| N.Kersting       | Externe Eingang für I_tGetStateTime *)
 (*====================================================================================================================================================*)
 FUNCTION_BLOCK fb_TasterBus6F
 VAR_INPUT
 	I_bUsePing			:BOOL;
 	I_tPingTime			:TIME := T#15S;
+	I_tGetStateTime		:TIME := T#15S;
+	
 	I_bFiFoDone			:BOOL;
 	I_FifoID			:INT;
 	I_bPingStart		:BOOL;			
@@ -369,7 +372,9 @@ bEventStartupDone :=	fbBusTasterEvent.Q_bStartupDone
     </Action>
     <Action Name="ac01_GetState" Id="{60316214-64a6-4fd8-a3b0-121d51a02a5f}">
       <Implementation>
-        <ST><![CDATA[(* Status Verzögert abfragen*)	
+        <ST><![CDATA[tGetExtInputStatus :=	I_tGetStateTime;
+
+(* Status Verzögert abfragen*)	
 tonStepGetState(
 	PT := tGetExtInputStatus);
 
@@ -432,12 +437,12 @@ CASE iStepState OF
 	
 	IF I_bFiFoDone
 	THEN
-		(*sFiFoSend := '';*)
-		iStepState := 30;
+		sFiFoSend := '';
+		iStepState := 0;
 	END_IF
 	
 (*============================================================================================*)	
-30:	(* Extra Wartezeit *)	
+30:	(* Extra Wartezeit 1 Zyklus Optional!*)	
 
 	sFiFoSend := '';
 	iStepState := 0;
@@ -1337,6 +1342,7 @@ END_FOR]]></ST>
       <LineId Id="406" Count="0" />
     </LineIds>
     <LineIds Name="fb_TasterBus6F.ac01_GetState">
+      <LineId Id="182" Count="1" />
       <LineId Id="136" Count="1" />
       <LineId Id="135" Count="0" />
       <LineId Id="162" Count="0" />

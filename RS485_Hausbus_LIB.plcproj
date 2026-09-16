@@ -19,7 +19,7 @@
     <Company>NKAutomation</Company>
     <Released>true</Released>
     <Title>RS485_Hausbus_Kernal</Title>
-    <ProjectVersion>1.4.7</ProjectVersion>
+    <ProjectVersion>1.4.9.2</ProjectVersion>
     <Author>N.Kersting</Author>
     <Description>Der reine RS485 Hausbus Kernal. </Description>
   </PropertyGroup>
@@ -154,6 +154,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\fb_RS485IdScan.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\OLD\fb_RS485FiFoMaster_old.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\OLD\fb_RS485Ping.TcPOU">
