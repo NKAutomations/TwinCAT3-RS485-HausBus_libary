@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
   <POU Name="fb_RS485FiFoMaster" Id="{35443bfd-a5e9-4472-8377-ccd124575ed5}" SpecialFunc="None">
     <Declaration><![CDATA[(*======================================================================================================================================*)
 (*//=============================================================================\\
@@ -28,6 +28,7 @@ Date          	| Version    	| created under        	| Author          	| Remark
 (*13/01/2026   	| 2.04      		| TC3		  		| N.Kersting       | Bugfix Step 12 nur speichern wenn ID vorhanden ist!*)
 (*09/06/2026   	| 2.05      		| TC3		  		| N.Kersting       | Obergrenze für Max Rows FiFo nun fix auf Globalen Wert *)
 (*09/06/2026   	| 2.06      		| TC3		  		| N.Kersting       | Integration I_nMaxDevices*)
+(*16/09/2026   	| 2.07      		| TC3		  		| N.Kersting       | Collision Detection eingang*)
 (*====================================================================================================================================================*)
 FUNCTION_BLOCK fb_RS485FiFoMaster
 VAR_INPUT
@@ -37,6 +38,10 @@ VAR_INPUT
 	
 	I_bAutoPing					:BOOL;												(* Wenn Aktiv wird Zyklisch Automatisch ein Ping gesendet, welcher von den einzelnen Kommunikationsbausteinen ausgewertet werden kann *)
 	I_tAutoPingTime				:TIME :=T#10S;										(* Die Intervallzeit, Bis ein Auto Ping gesendet wird *)
+	
+	I_bUseRXCollisionDetection	:BOOL := TRUE;					(* Aktiviert die Empfangs Kollisions Überprüfung *)
+	I_bUseTXCollisionDetection	:BOOL := FALSE;					(* Aktiviert die Sende Kollisions Überprüfung *)
+	I_tVerzCollisionDetect		:TIME := T#100MS;
 	
 	I_bManuellMode				:BOOL := FALSE;
 	I_bSearchMode				:BOOL := FALSE;
@@ -128,6 +133,9 @@ tonTimeout(
 	
 (*============================================================================================*)		
 (* Collision detection, soll verhinddern, dass nicht gesendet wird, wenn Daten im Empfangsüpuffer sind *)
+bUseRXCollisionDetection := I_bUseRXCollisionDetection;
+bUseTXCollisionDetection := I_bUseTXCollisionDetection;
+
 (* Receive Collision Dectetion *)
 bRXCollisionDetected :=	(I_pRxBuffer^.Count > INT_TO_UINT(iMaxBufferBlocking) 
 						OR I_pRxBuffer^.FreeByte < (301 -INT_TO_UINT(iMaxBufferBlocking))
@@ -144,7 +152,9 @@ bTXCollisionDetected :=	(I_pTxBuffer^.Count > INT_TO_UINT(iMaxBufferBlocking)
 						OR I_pTxBuffer^.Error <> 0)
 						AND bUseTXCollisionDetection;
 						
-(* Collision Detection Verzögern *)						
+(* Collision Detection Verzögern *)	
+tVerzCollisionDetect :=		I_tVerzCollisionDetect;
+			
 tonCollisionFree(
 	IN := 	NOT bRXCollisionDetected
 			AND NOT bTXCollisionDetected,
@@ -651,6 +661,7 @@ fbRS485Search(
       <LineId Id="1672" Count="0" />
       <LineId Id="812" Count="0" />
       <LineId Id="1675" Count="0" />
+      <LineId Id="2687" Count="2" />
       <LineId Id="1593" Count="0" />
       <LineId Id="1596" Count="2" />
       <LineId Id="1609" Count="0" />
@@ -663,6 +674,7 @@ fbRS485Search(
       <LineId Id="1628" Count="0" />
       <LineId Id="1619" Count="0" />
       <LineId Id="1599" Count="0" />
+      <LineId Id="2692" Count="1" />
       <LineId Id="807" Count="0" />
       <LineId Id="1582" Count="0" />
       <LineId Id="1631" Count="0" />

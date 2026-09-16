@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
   <POU Name="fb_TasterBus6F" Id="{a0069685-c44e-42fa-a04e-92298e22450c}" SpecialFunc="None">
     <Declaration><![CDATA[(*======================================================================================================================================*)
 (*//=============================================================================\\
@@ -49,6 +49,10 @@ Date          	| Version    	| created under        	| Author          	| Remark
 (*22/01/2026   	| 7.00      		| TC3		  		| N.Kersting       | Komplett überarbeitet mit umstellung auf Stringbuilder *)
 (*25/01/2026   	| 7.01      		| TC3		  		| N.Kersting       | Eventbausteine alle komplett überarbeitet mit den neuen ASCII_RS485 Funktionen *)
 (*08/06/2026   	| 8.00      		| TC3		  		| N.Kersting       | Vorbereitung für Bibliotheksfähigkeit, keine externen Referenzen mehr *)
+(*15/09/2026   	| 8.01      		| TC3		  		| N.Kersting       | Neue Zyklische Prüfung von externen Inputs *)
+(*16/09/2026   	| 8.02      		| TC3		  		| N.Kersting       | I_bInputStateCheck hinzugefügt*)
+(*16/09/2026   	| 8.03      		| TC3		  		| N.Kersting       | Schrittketten Bugfix *)
+(*16/09/2026   	| 8.04      		| TC3		  		| N.Kersting       | Externe event ID bugfix *)
 (*====================================================================================================================================================*)
 FUNCTION_BLOCK fb_TasterBus6F
 VAR_INPUT
@@ -56,7 +60,8 @@ VAR_INPUT
 	I_tPingTime			:TIME := T#15S;
 	I_bFiFoDone			:BOOL;
 	I_FifoID			:INT;
-	I_bPingStart		:BOOL;						(* Ping Done vom Vorheriegen*)
+	I_bPingStart		:BOOL;			
+	I_bInputStateCheck  :BOOL := FALSE;			(* Ping Done vom Vorheriegen*)
 	I_stInput			:ST_BusTaster6F_Input;
 	I_StringReceived	:STRING(255);
 END_VAR
@@ -72,7 +77,7 @@ VAR
 	bSetExecute			:BOOL := TRUE;				(* Aktiviert die Schrittketten, welche Telegramme versenden *)
 	bCheckPing			:BOOL := TRUE;				(* Ping Checken Schrittkette Aktivieren *)
 	bInputFaultDetect	:BOOL := TRUE;				(* Prüft die Eingänge ob sie zu lange geschaltet wurden und führt ein reset des eingangs aus *)
-	
+	bExtInputStateCheck	:BOOL := TRUE;				(* Prüft die Externen Eingänge zyklisch in der Zeit von tGetExtInputStatus ab *)
 	sStartZeichen		:BYTE := 16#FD;				(* Startzeichen Präfix *)
 	sEndZeichen			:BYTE := 16#FE;				(* Endzeichen Suffix *)
 	
@@ -82,6 +87,7 @@ VAR
 	tResetReboot		:TIME:= T#10S;				(* Zeit, die nach einem Reset Abgewaretet wird damit das Gerät neustarten kann*)
 	tStartupAfterReset	:TIME := T#5S;				(* Zeit, wann das Startup Zurückgesetzt wird, wenn der Ping verloren wird *)
 	tInputFaultDetect	:TIME := T#10S;				(* Prüft die Eingänge ob sie zu lange geschaltet wurden und führt ein reset des eingangs aus *)
+	tGetExtInputStatus	:TIME := T#15S;				(* Prüft die Externen Eingänge zyklisch in diesem rythmus ab *)
 (*----------------------------------------------*)
 (* Strings *)
 (*----------------------------------------------*)			
@@ -104,6 +110,7 @@ VAR
 (* Indexe *)
 (*----------------------------------------------*)	
 	iStepSet			:INT;
+	iStepState			:INT;
 	i,h,j,l,e			:INT;
 	
 	iDimmMem			:ARRAY[1..6] OF INT;
@@ -123,6 +130,7 @@ VAR
 	
 	tonResetTimeout			:ton;
 	tonStepStartup			:ton;
+	tonStepGetState			:ton;
 (*----------------------------------------------*)
 (* Status *)
 (*----------------------------------------------*)			
@@ -144,6 +152,7 @@ END_VAR]]></Declaration>
 (* Parameter *)
 tPingTimer :=			I_tPingTime;
 bCheckPing :=			I_bUsePing;
+bExtInputStateCheck :=	I_bInputStateCheck;
 
 (*///////////////////////////////////////////////////////////*)
 (* Reset *)
@@ -223,7 +232,15 @@ E_HB_Device_Startup:
 E_HB_Device_OP:
 		ac00_Event();
 		ac01_SetLED();	
+		ac01_GetState(); (* Neuheit, hier wird in einem Definierten Takt die Externen Signale nochmal abgefragt!*)
 		ac10_Counter();
+		
+		(* Wenn beide Schrittketten Init state haben, wird Fifo zurückgesetzt*)
+		IF iStepSet = 0
+			AND iStepState = 0
+		THEN
+			sFiFoSend := ''; 
+		END_IF
 		
 		Q_stOutput.sState 		:=	CONCAT(I_stInput.sName,'| ');
 		Q_stOutput.sState		:=	CONCAT(Q_stOutput.sState, fbUniHBComOperator.Q_sState);
@@ -350,6 +367,85 @@ bEventStartupDone :=	fbBusTasterEvent.Q_bStartupDone
 						]]></ST>
       </Implementation>
     </Action>
+    <Action Name="ac01_GetState" Id="{60316214-64a6-4fd8-a3b0-121d51a02a5f}">
+      <Implementation>
+        <ST><![CDATA[(* Status Verzögert abfragen*)	
+tonStepGetState(
+	PT := tGetExtInputStatus);
+
+IF NOT bExtInputStateCheck
+THEN
+	iStepState := 0;
+END_IF
+
+CASE iStepState OF
+(*============================================================================================*)
+0: (* INIT*)
+	tonStepGetState.IN := bExtInputStateCheck;
+	
+	IF I_stInput.bExtInputs
+		AND NOT bSendeAnforderung
+		AND NOT bSendeAnforderungExt
+		AND NOT bSendeAnforderungBG
+		AND iStepSet = 0
+		AND tonStepGetState.Q
+		AND tGetExtInputStatus <> T#0MS
+		AND bExtInputStateCheck
+	THEN	
+		sFiFoSend := '';
+		iStepState := 10; (* Einfache prüfung der externen eingänge *)
+	END_IF
+	
+(*============================================================================================*)	
+10:	(* Status Prüfen *)	
+		
+	tonStepGetState.IN := FALSE;
+	
+	fbRS485HBStringBuilder(
+		I_bExecute:= 		TRUE, 
+		I_diID:= 			I_stInput.diID, 
+		I_iInstID:= 		33, 
+		I_EnumHBUnitTX:= 	E_EnumHBUnitTX.E_HB_UNIT_BTN, 
+		I_EnumHBCmdTX:= 	E_EnumHBCmdTX.E_HB_CMD_gSTATUS, 
+		I_iCnt:= 			4, 
+		Q_sOut=> 			sSendString);
+		
+	(* Senden an FiFo*)
+	IF I_bFiFoDone
+		AND fbRS485HBStringBuilder.Q_bDone
+	THEN
+		sFiFoSend :=	sSendString;
+	END_IF	
+	IF NOT I_bFiFoDone
+	THEN
+		fbRS485HBStringBuilder(
+			I_bExecute:= 		FALSE); 
+		
+		bSendeAnforderung := FALSE;
+		bSendeAnforderungExt := FALSE;
+		sLastSendString :=	sFiFoSend;
+		iStepState := 20;
+	END_IF
+	
+(*============================================================================================*)	
+20:	(* Warten bis nicht Busy *)	
+	
+	IF I_bFiFoDone
+	THEN
+		(*sFiFoSend := '';*)
+		iStepState := 30;
+	END_IF
+	
+(*============================================================================================*)	
+30:	(* Extra Wartezeit *)	
+
+	sFiFoSend := '';
+	iStepState := 0;
+	
+END_CASE
+]]></ST>
+      </Implementation>
+    </Action>
     <Action Name="ac01_SetLED" Id="{651f7719-84cd-4258-a7be-87a8f87d76f8}">
       <Implementation>
         <ST><![CDATA[(*============================================================================================*)
@@ -380,7 +476,7 @@ CASE iStepSet OF
 0:	(* INIT und warten auf Change *)
 	tonStepStartup.PT:= tStartupLEDOn;				
 	tonStepStartup.IN := FALSE;
-	sFiFoSend := ''; 
+	(*sFiFoSend := ''; *)
 	
 	fbRS485HBStringBuilder(
 		I_bExecute:= 		FALSE );
@@ -415,6 +511,7 @@ CASE iStepSet OF
 		OR bSendeAnforderungBG)
 		AND bSetExecute)
 		AND NOT fbUniHBComOperator.Q_bStartupStart
+		AND (iStepState = 0) 
 	THEN
 		(* Helligkeitsvorgaben speichern in Mem Arrays *)
 		FOR h := 1 TO 6 BY 1 DO
@@ -1117,7 +1214,9 @@ END_FOR]]></ST>
     <LineIds Name="fb_TasterBus6F">
       <LineId Id="2349" Count="2" />
       <LineId Id="2353" Count="0" />
-      <LineId Id="2586" Count="1" />
+      <LineId Id="2586" Count="0" />
+      <LineId Id="3114" Count="0" />
+      <LineId Id="2587" Count="0" />
       <LineId Id="2582" Count="0" />
       <LineId Id="2575" Count="0" />
       <LineId Id="2593" Count="1" />
@@ -1166,8 +1265,16 @@ END_FOR]]></ST>
       <LineId Id="2570" Count="0" />
       <LineId Id="2568" Count="1" />
       <LineId Id="2549" Count="0" />
-      <LineId Id="2551" Count="3" />
-      <LineId Id="2571" Count="2" />
+      <LineId Id="2551" Count="2" />
+      <LineId Id="3115" Count="0" />
+      <LineId Id="3109" Count="0" />
+      <LineId Id="2571" Count="0" />
+      <LineId Id="3122" Count="0" />
+      <LineId Id="3116" Count="1" />
+      <LineId Id="3119" Count="1" />
+      <LineId Id="3118" Count="0" />
+      <LineId Id="3121" Count="0" />
+      <LineId Id="2572" Count="1" />
       <LineId Id="2528" Count="0" />
       <LineId Id="2574" Count="0" />
       <LineId Id="1310" Count="1" />
@@ -1229,6 +1336,41 @@ END_FOR]]></ST>
       <LineId Id="267" Count="3" />
       <LineId Id="406" Count="0" />
     </LineIds>
+    <LineIds Name="fb_TasterBus6F.ac01_GetState">
+      <LineId Id="136" Count="1" />
+      <LineId Id="135" Count="0" />
+      <LineId Id="162" Count="0" />
+      <LineId Id="138" Count="0" />
+      <LineId Id="163" Count="3" />
+      <LineId Id="130" Count="1" />
+      <LineId Id="129" Count="0" />
+      <LineId Id="139" Count="0" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="141" Count="0" />
+      <LineId Id="148" Count="2" />
+      <LineId Id="159" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="157" Count="0" />
+      <LineId Id="161" Count="0" />
+      <LineId Id="144" Count="0" />
+      <LineId Id="171" Count="0" />
+      <LineId Id="145" Count="0" />
+      <LineId Id="143" Count="0" />
+      <LineId Id="146" Count="0" />
+      <LineId Id="2" Count="2" />
+      <LineId Id="155" Count="1" />
+      <LineId Id="5" Count="14" />
+      <LineId Id="21" Count="17" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="132" Count="0" />
+      <LineId Id="173" Count="0" />
+      <LineId Id="172" Count="0" />
+      <LineId Id="175" Count="0" />
+      <LineId Id="174" Count="0" />
+      <LineId Id="181" Count="0" />
+      <LineId Id="180" Count="0" />
+      <LineId Id="133" Count="1" />
+    </LineIds>
     <LineIds Name="fb_TasterBus6F.ac01_SetLED">
       <LineId Id="386" Count="1" />
       <LineId Id="71" Count="0" />
@@ -1276,6 +1418,7 @@ END_FOR]]></ST>
       <LineId Id="825" Count="1" />
       <LineId Id="99" Count="0" />
       <LineId Id="345" Count="0" />
+      <LineId Id="1164" Count="0" />
       <LineId Id="96" Count="0" />
       <LineId Id="741" Count="1" />
       <LineId Id="744" Count="1" />
@@ -1285,7 +1428,7 @@ END_FOR]]></ST>
       <LineId Id="98" Count="0" />
       <LineId Id="158" Count="2" />
       <LineId Id="865" Count="0" />
-      <LineId Id="161" Count="0" />
+      <LineId Id="1173" Count="0" />
       <LineId Id="97" Count="0" />
       <LineId Id="309" Count="0" />
       <LineId Id="282" Count="0" />
