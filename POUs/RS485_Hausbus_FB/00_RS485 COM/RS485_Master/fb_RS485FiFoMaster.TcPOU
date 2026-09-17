@@ -31,6 +31,7 @@ Date          	| Version    	| created under        	| Author          	| Remark
 (*16/09/2026   	| 2.07      		| TC3		  		| N.Kersting       | Collision Detection eingang*)
 (*16/09/2026   	| 2.07      		| TC3		  		| N.Kersting       | Sende und Empfangsoptimierung*)
 (*17/09/2026   	| 2.08      		| TC3		  		| N.Kersting       | Input Parameter Erweitert : I_iMaxRetySend, I_tVerzSendRetry, I_tVerzPing*)
+(*17/09/2026   	| 2.09      		| TC3		  		| N.Kersting       | Bugfix bDone blieb hängen, Fallback soll automatisch zurücksetzen*)
 (*====================================================================================================================================================*)
 FUNCTION_BLOCK fb_RS485FiFoMaster
 VAR_INPUT
@@ -81,6 +82,7 @@ VAR
 	bUseRXCollisionDetection	:BOOL := TRUE;					(* Aktiviert die Empfangs Kollisions Überprüfung *)
 	bUseTXCollisionDetection	:BOOL := FALSE;					(* Aktiviert die Sende Kollisions Überprüfung *)
 	tVerzCollisionDetect		:TIME := T#100MS;				(* Zeit, die zum Empfangen bleibt *)
+	tVerzDoneTimeout			:TIME := T#2S;		
 (*==========================================================================================================*)	
 	bRXCollisionDetected		:BOOL;
 	bTXCollisionDetected		:BOOL;
@@ -92,6 +94,7 @@ VAR
 	bBusAuslastung				:BOOL := TRUE;
 	bPingStart					:BOOL;
 	bBusyMem					:BOOL;
+	bFiFoDone					:BOOL; (* Merker, dass eventuell ein Done nicht Quittiert wurde *)
 (*==========================================================================================================*)	
 	sReceivedMEMString			:STRING(255);
 	sReceivedString				:STRING(255);
@@ -104,13 +107,15 @@ VAR
 	iMaxBufferBlocking			:INT := 20;
 	icntError					:INT;
 	iFiFoRow					:INT := 1;
+	iCntFiFoDone				:INT :=0;
 	icntFiFo					:INT;
 	i,h							:INT;
 	iStepFiFo					:INT;
 	iPingRow					:INT;
-	iSendRetry						:INT;
-	iRetryStep						:INT;
-	iMaxSendRetry					:INT := 3;
+	iSendRetry					:INT;
+	iRetryStep					:INT;
+	iMaxSendRetry				:INT := 3;
+	dwCntTimeout				:DWORD := 0;
 (*==========================================================================================================*)		
 
 	tonCollisionFree			:ton;	
@@ -118,7 +123,8 @@ VAR
 	tonPingIntervall			:ton;
 	tonPingVerz					:ton;
 	tonSend						:ton;
-	tonRetryDelay					:ton;
+	tonRetryDelay				:ton;
+	tonFiFoDoneTimeout			:ton;
 (*==========================================================================================================*)		
 	rTrigSendManuell			:r_Trig;
 	rTrigSendSearchMode			:r_trig;
@@ -138,6 +144,9 @@ END_VAR
 (* Laufzeit fehler *)
 tonTimeout(
 	PT:=T#1S);
+
+tonFiFoDoneTimeout(
+	PT := tVerzDoneTimeout);
 
 (* Retry Paramater übergeben *)
 iMaxSendRetry := I_iMaxRetySend;
@@ -193,6 +202,7 @@ sReceivedMEMString:='';
 (*============================================================================================*)	
 (* Anzahl der gefüllten FiFo Zeilen *)
 icntFiFo := 0;
+iCntFiFoDone := 0;
 FOR i := 1 TO cMaxRowCMDFiFo BY 1 DO 
 	
 	IF i <= I_nMaxDevices
@@ -202,7 +212,18 @@ FOR i := 1 TO cMaxRowCMDFiFo BY 1 DO
 			icntFiFo := icntFiFo +1;
 		END_IF
 	END_IF
+	IF i <= I_nMaxDevices
+	THEN
+		IF Q_bSendDoneFiFo[i]
+		THEN
+			iCntFiFoDone := iCntFiFoDone +1;
+		END_IF
+	END_IF
 END_FOR
+
+(* Alle FiFo Rows Done *)
+bFiFoDone := iCntFiFoDone = I_nMaxDevices;
+tonFiFoDoneTimeout.IN :=	NOT bFiFoDone;
 
 (*============================================================================================*)	
 (* Manuelles Senden *)
@@ -339,6 +360,16 @@ CASE iStepFiFo OF
 						iStepFiFo := iStepFiFo+1;
 					END_IF
 				ELSE
+					(* Notfallschaltung, falls mal ein bDone hängt*)
+					IF tonFiFoDoneTimeout.Q
+					THEN
+						dwCntTimeout := dwCntTimeout+1;
+						
+						FOR h := 1 TO I_nMaxDevices BY 1 DO
+							Q_bSendDoneFiFo[h] :=TRUE;
+						END_FOR
+					END_IF
+					
 					iStepFiFo := 0;	(* Alle Zeilen Abgearbeitet *)
 				END_IF
 			END_IF
@@ -415,21 +446,22 @@ CASE iStepFiFo OF
 3:	(* Senden*)		
 	Q_bSendDoneFiFo[iFiFoRow] :=TRUE;
 	
+	
 	IF iFiFoRow< I_nMaxDevices
 		AND NOT I_bSearchMode
 	THEN
 		iFiFoRow := iFiFoRow+1;
 		iStepFiFo := 1;
 	ELSE
+		(* IN der regel wird dieser schritt nie erreicht, da er durch Schritt 1 abgefangen wird! *)
 		Q_bDone := TRUE;
-		
+	
 		IF (NOT fbRS485Search.Q_bSend
 			AND I_bSearchMode)
 			OR NOT I_bSearchMode
 		THEN
-			iStepFiFo := 0;
+			iStepFiFo := 0;			
 		END_IF
-		
 	END_IF
 	
 (*============================================================================================*)	
@@ -692,7 +724,10 @@ fbRS485Search(
       <LineId Id="1683" Count="0" />
       <LineId Id="681" Count="0" />
       <LineId Id="677" Count="0" />
+      <LineId Id="2865" Count="0" />
       <LineId Id="2845" Count="0" />
+      <LineId Id="2868" Count="0" />
+      <LineId Id="2866" Count="0" />
       <LineId Id="2842" Count="0" />
       <LineId Id="1672" Count="0" />
       <LineId Id="2843" Count="0" />
@@ -737,14 +772,22 @@ fbRS485Search(
       <LineId Id="1678" Count="0" />
       <LineId Id="486" Count="0" />
       <LineId Id="489" Count="0" />
-      <LineId Id="2544" Count="2" />
+      <LineId Id="2544" Count="1" />
+      <LineId Id="2848" Count="0" />
+      <LineId Id="2546" Count="0" />
       <LineId Id="2549" Count="2" />
       <LineId Id="2548" Count="0" />
       <LineId Id="2547" Count="0" />
       <LineId Id="493" Count="0" />
       <LineId Id="1679" Count="1" />
+      <LineId Id="2850" Count="5" />
+      <LineId Id="2849" Count="0" />
       <LineId Id="1073" Count="0" />
+      <LineId Id="2859" Count="0" />
+      <LineId Id="2857" Count="0" />
       <LineId Id="684" Count="0" />
+      <LineId Id="2858" Count="0" />
+      <LineId Id="2870" Count="0" />
       <LineId Id="1074" Count="0" />
       <LineId Id="1711" Count="0" />
       <LineId Id="503" Count="0" />
@@ -835,7 +878,15 @@ fbRS485Search(
       <LineId Id="1133" Count="0" />
       <LineId Id="1090" Count="11" />
       <LineId Id="1104" Count="11" />
-      <LineId Id="1117" Count="4" />
+      <LineId Id="1117" Count="2" />
+      <LineId Id="2899" Count="0" />
+      <LineId Id="2906" Count="1" />
+      <LineId Id="2912" Count="1" />
+      <LineId Id="2910" Count="1" />
+      <LineId Id="2909" Count="0" />
+      <LineId Id="2908" Count="0" />
+      <LineId Id="2914" Count="0" />
+      <LineId Id="1120" Count="1" />
       <LineId Id="1584" Count="0" />
       <LineId Id="1125" Count="0" />
       <LineId Id="2841" Count="0" />
@@ -872,11 +923,14 @@ fbRS485Search(
       <LineId Id="1479" Count="0" />
       <LineId Id="1408" Count="2" />
       <LineId Id="2218" Count="1" />
-      <LineId Id="1411" Count="13" />
-      <LineId Id="2416" Count="0" />
-      <LineId Id="1425" Count="3" />
-      <LineId Id="1431" Count="1" />
-      <LineId Id="2052" Count="4" />
+      <LineId Id="1411" Count="5" />
+      <LineId Id="2864" Count="0" />
+      <LineId Id="1417" Count="5" />
+      <LineId Id="2922" Count="0" />
+      <LineId Id="1423" Count="1" />
+      <LineId Id="2915" Count="4" />
+      <LineId Id="2875" Count="1" />
+      <LineId Id="2053" Count="3" />
       <LineId Id="2051" Count="0" />
       <LineId Id="1439" Count="12" />
       <LineId Id="2058" Count="1" />

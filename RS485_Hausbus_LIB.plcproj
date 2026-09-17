@@ -19,7 +19,7 @@
     <Company>NKAutomation</Company>
     <Released>true</Released>
     <Title>RS485_Hausbus_Kernal</Title>
-    <ProjectVersion>1.4.9.3</ProjectVersion>
+    <ProjectVersion>1.4.9.5</ProjectVersion>
     <Author>N.Kersting</Author>
     <Description>Der reine RS485 Hausbus Kernal. </Description>
   </PropertyGroup>
