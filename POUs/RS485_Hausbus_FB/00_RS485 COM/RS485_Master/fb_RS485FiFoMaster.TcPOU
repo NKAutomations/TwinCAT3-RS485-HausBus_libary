@@ -30,6 +30,7 @@ Date          	| Version    	| created under        	| Author          	| Remark
 (*09/06/2026   	| 2.06      		| TC3		  		| N.Kersting       | Integration I_nMaxDevices*)
 (*16/09/2026   	| 2.07      		| TC3		  		| N.Kersting       | Collision Detection eingang*)
 (*16/09/2026   	| 2.07      		| TC3		  		| N.Kersting       | Sende und Empfangsoptimierung*)
+(*17/09/2026   	| 2.08      		| TC3		  		| N.Kersting       | Input Parameter Erweitert : I_iMaxRetySend, I_tVerzSendRetry, I_tVerzPing*)
 (*====================================================================================================================================================*)
 FUNCTION_BLOCK fb_RS485FiFoMaster
 VAR_INPUT
@@ -39,10 +40,12 @@ VAR_INPUT
 	
 	I_bAutoPing					:BOOL;												(* Wenn Aktiv wird Zyklisch Automatisch ein Ping gesendet, welcher von den einzelnen Kommunikationsbausteinen ausgewertet werden kann *)
 	I_tAutoPingTime				:TIME :=T#10S;										(* Die Intervallzeit, Bis ein Auto Ping gesendet wird *)
-	
 	I_bUseRXCollisionDetection	:BOOL := TRUE;					(* Aktiviert die Empfangs Kollisions Überprüfung *)
 	I_bUseTXCollisionDetection	:BOOL := FALSE;					(* Aktiviert die Sende Kollisions Überprüfung *)
 	I_tVerzCollisionDetect		:TIME := T#100MS;
+	I_tVerzPing					:TIME := T#100MS;
+	I_iMaxRetySend				:INT := 3;
+	I_tVerzSendRetry			:TIME := T#20MS;
 	
 	I_bManuellMode				:BOOL := FALSE;
 	I_bSearchMode				:BOOL := FALSE;
@@ -135,6 +138,9 @@ END_VAR
 (* Laufzeit fehler *)
 tonTimeout(
 	PT:=T#1S);
+
+(* Retry Paramater übergeben *)
+iMaxSendRetry := I_iMaxRetySend;
 	
 (*============================================================================================*)		
 (* Collision detection, soll verhindern, dass nicht gesendet wird, wenn Daten im Empfangspuffer sind *)
@@ -173,11 +179,11 @@ tonPingIntervall(
 	PT := I_tAutoPingTime);
 
 tonPingVerz(
-	PT := T#100MS);	
+	PT := I_tVerzPing);	
 
 tonRetryDelay(
 	IN := iStepFiFo = 4,
-	PT := T#20MS);
+	PT := I_tVerzSendRetry);
 	
 (*============================================================================================*)	
 (* Busbelastungstest *)	
@@ -240,32 +246,7 @@ CASE iStepFiFo OF
 	THEN
 		bPingStart := TRUE;
 	END_IF
-	
-	(*IF (icntFiFo > 0
-		OR  bBusBelastungstest
-		OR I_bManuellMode)
-		AND NOT bFirstCycle
-		AND NOT bPingStart
-		AND bCollisionFree
-	THEN
-		Q_bBusy := TRUE;
-		iStepFiFo := 1;
-	ELSIF
-		bFirstCycle
-	THEN
-		iStepFiFo := -1;
-	ELSIF
-	(* (	*)(bPingStart
-		AND NOT bFirstCycle)
-		(*OR (bPingStart
-		AND iPingRow <> cMaxRS485CMDFiFo))*) (* Es stehen noch Ping befehle aus *)
-		AND bCollisionFree
-		(*AND icntFiFo =0*)
-	THEN
-		(*iFiFoRow := iPingRow;*)
-		iStepFiFo := 10;	(* Ping senden *)
-	END_IF*)
-	
+		
 	IF bFirstCycle
 	THEN
 		iStepFiFo := -1;
@@ -362,6 +343,7 @@ CASE iStepFiFo OF
 				END_IF
 			END_IF
 		ELSE
+			
 		(* Senden *)
 		Q_bSendDoneFiFo[iFiFoRow] :=FALSE;
 		
@@ -710,7 +692,10 @@ fbRS485Search(
       <LineId Id="1683" Count="0" />
       <LineId Id="681" Count="0" />
       <LineId Id="677" Count="0" />
+      <LineId Id="2845" Count="0" />
+      <LineId Id="2842" Count="0" />
       <LineId Id="1672" Count="0" />
+      <LineId Id="2843" Count="0" />
       <LineId Id="812" Count="0" />
       <LineId Id="1675" Count="0" />
       <LineId Id="2687" Count="2" />
@@ -797,28 +782,7 @@ fbRS485Search(
       <LineId Id="507" Count="0" />
       <LineId Id="857" Count="0" />
       <LineId Id="1148" Count="0" />
-      <LineId Id="705" Count="0" />
-      <LineId Id="1238" Count="0" />
-      <LineId Id="822" Count="0" />
-      <LineId Id="509" Count="0" />
-      <LineId Id="928" Count="0" />
-      <LineId Id="512" Count="0" />
-      <LineId Id="706" Count="0" />
-      <LineId Id="708" Count="1" />
-      <LineId Id="707" Count="0" />
-      <LineId Id="1240" Count="2" />
-      <LineId Id="2192" Count="0" />
-      <LineId Id="2227" Count="0" />
-      <LineId Id="1483" Count="0" />
-      <LineId Id="2222" Count="0" />
-      <LineId Id="1243" Count="0" />
-      <LineId Id="2193" Count="0" />
-      <LineId Id="1244" Count="0" />
-      <LineId Id="506" Count="0" />
-      <LineId Id="2228" Count="0" />
-      <LineId Id="2236" Count="1" />
       <LineId Id="2248" Count="0" />
-      <LineId Id="2239" Count="0" />
       <LineId Id="2242" Count="2" />
       <LineId Id="2258" Count="1" />
       <LineId Id="2245" Count="0" />
@@ -873,7 +837,9 @@ fbRS485Search(
       <LineId Id="1104" Count="11" />
       <LineId Id="1117" Count="4" />
       <LineId Id="1584" Count="0" />
-      <LineId Id="1125" Count="7" />
+      <LineId Id="1125" Count="0" />
+      <LineId Id="2841" Count="0" />
+      <LineId Id="1126" Count="6" />
       <LineId Id="1089" Count="0" />
       <LineId Id="530" Count="0" />
       <LineId Id="658" Count="0" />
