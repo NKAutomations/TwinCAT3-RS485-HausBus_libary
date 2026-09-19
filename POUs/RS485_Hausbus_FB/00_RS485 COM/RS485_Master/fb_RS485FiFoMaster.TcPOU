@@ -152,16 +152,31 @@ tonFiFoDoneTimeout(
 iMaxSendRetry := I_iMaxRetySend;
 	
 (*============================================================================================*)		
-(* Collision detection, soll verhindern, dass nicht gesendet wird, wenn Daten im Empfangspuffer sind *)
+(* Empfangsstring zyklisch zurücksetzen.
+   Der String soll nur für einen SPS Zyklus an den Gerätebausteinen anliegen. *)
+sReceivedMEMString:='';
+
+(*============================================================================================*)
+(* Empfang zuerst bearbeiten.
+   Wichtig bei TC2_SerialCom:
+   Der ReceiveString255 Baustein muss zyklisch laufen, damit der ComBuffer sauber abgebaut wird.
+   Dadurch ist der RX Status im restlichen Master bereits aktuell. *)
+IF bActivateReceive
+THEN
+	ac00_Receive();
+END_IF
+
+(*============================================================================================*)		
+(* Collision detection, soll verhindern, dass nicht gesendet wird, wenn wirklich noch empfangen wird *)
 bUseRXCollisionDetection := I_bUseRXCollisionDetection;
 bUseTXCollisionDetection := I_bUseTXCollisionDetection;
 
-(* Receive Collision Dectetion *)
-bRXCollisionDetected :=	(I_pRxBuffer^.Count > 0
+(* Receive Collision Dectetion
+   Ein gefüllter RX Puffer allein ist keine Kollision.
+   Entscheidend ist, ob der ReceiveString255 gerade aktiv empfängt oder der Buffer einen Fehler meldet. *)
+bRXCollisionDetected :=	(fbReceive.Busy
 						OR I_pRxBuffer^.blocked
 						OR I_pRxBuffer^.Error <> 0)
-						(* Ein empfangenes Telegramm ist keine Kollision. *)
-						(*OR sReceivedString <> '')*)
 						AND bUseRXCollisionDetection;
 						
 (* Transmit Collision Detection *)
@@ -197,7 +212,6 @@ tonRetryDelay(
 (*============================================================================================*)	
 (* Busbelastungstest *)	
 bBusBelastungstest := I_bBusBelastungstest;
-sReceivedMEMString:='';
 
 (*============================================================================================*)	
 (* Anzahl der gefüllten FiFo Zeilen *)
@@ -396,7 +410,7 @@ CASE iStepFiFo OF
 	tonTimeout.IN := fbSend.Busy;
 	
 	IF NOT fbSend.Busy
-		AND NOT fbReceive.StringReceived
+		AND sReceivedMEMString = ''
 	THEN
 		sString := '';
 		tonSend.IN := FALSE;
@@ -508,12 +522,12 @@ CASE iStepFiFo OF
 	tonTimeout.IN := fbSend.Busy;
 	
 	IF NOT fbSend.Busy
-		(*AND NOT fbReceive.StringReceived*)
+		(*AND sReceivedMEMString = ''*)
 	THEN
 		tonSend.IN := FALSE;
 		bStringSend := FALSE;
 				
-		IF NOT fbReceive.StringReceived
+		IF sReceivedMEMString = ''
 			AND bCollisionFree
 		THEN
 			iStepFiFo := iStepFiFo+1;
@@ -582,7 +596,7 @@ CASE iStepFiFo OF
 			
 	IF tonPingVerz.Q
 	THEN
-		IF NOT fbReceive.StringReceived
+		IF sReceivedMEMString = ''
 			AND bCollisionFree
 		THEN
 			tonPingVerz.IN := FALSE;
@@ -616,14 +630,8 @@ ELSE
 END_CASE
 
 (*============================================================================================*)	
-(* Empfang und Senden unabhängig voneinander bearbeiten.
-   Der RX-Parser muss auch während eines TX-Auftrages laufen,
-   damit spontane Tastertelegramme nicht im Empfangspuffer warten. *)
-IF bActivateReceive
-THEN
-	ac00_Receive();
-END_IF
-
+(* Senden separat bearbeiten.
+   Der Empfang wurde bereits am Anfang des Zyklus bearbeitet, damit der RX Puffer immer aktuell bleibt. *)
 IF bStringSend
 THEN
 	IF bActivateSend
@@ -669,30 +677,27 @@ fbRS485Logger(
         <ST><![CDATA[(*============================================================================================*)	
 (* Empfangen *)
 
-CASE iStepReceive OF		
-0:	fbReceive(
-		Prefix := 			F_ToCHR(I_sStartZeichen),
-		Suffix := 			F_ToCHR(I_sEndZeichen),
-		Timeout:= , 
-		Reset:= , 
-		StringReceived=> , 
-		Busy=> , 
-		Error=> , 
-		RxTimeout=> , 
-		ReceivedString:= 	sReceivedString, 
-		RXbuffer:= 			I_pRxBuffer^);
-		
-	IF fbReceive.StringReceived
-	THEN
-		iStepReceive := 1;
-		sReceivedMEMString := sReceivedString;
-	END_IF
-	
-1:	sReceivedString := '';
-	iStepReceive := 0;
+fbReceive(
+	Prefix := 			F_ToCHR(I_sStartZeichen),
+	Suffix := 			F_ToCHR(I_sEndZeichen),
+	Timeout:= , 
+	Reset:= , 
+	StringReceived=> , 
+	Busy=> , 
+	Error=> , 
+	RxTimeout=> , 
+	ReceivedString:= 	sReceivedString, 
+	RXbuffer:= 			I_pRxBuffer^);
 
-	
-END_CASE]]></ST>
+IF fbReceive.StringReceived
+THEN
+	(* Telegramm für genau einen SPS Zyklus bereitstellen *)
+	iStepReceive := 1;
+	sReceivedMEMString := sReceivedString;
+	sReceivedString := '';
+ELSE
+	iStepReceive := 0;
+END_IF]]></ST>
       </Implementation>
     </Action>
     <Action Name="ac99_Diagnose" Id="{13888323-b88f-40dc-8880-dc2aa338cae3}">
