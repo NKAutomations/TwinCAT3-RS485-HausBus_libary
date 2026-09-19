@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="fb_RS485Logger" Id="{df597eda-03f7-4900-b7b4-e63608de5e06}" SpecialFunc="None">
+    <Declaration><![CDATA[(*======================================================================================================================================*)
+(*//=============================================================================\\
+||  _   _ _  __  _         _                        _   _                      ||
+|| | \ | | |/ / / \  _   _| |_ ___  _ __ ___   __ _| |_(_) ___  _ __         ||
+|| |  \| | ' / / _ \| | | | __/ _ \| '_ ` _ \ / _` | __| |/ _ \| '_ \        ||
+|| | |\  | .  \/ ___ \ |_| | || (_) | | | | | | (_| | |_| | (_) | | | |       ||
+|| |_| \_|_|\_\_/  \_\__,_|\__\___/|_| |_| |_|\__,_|\__|_|\___/|_| |_|       ||
+||                                                                             ||
+\\=============================================================================//*)
+(*fb_RS485Logger: 	Einfaches Logging von RX und TX Telegrammen*)
+(*
+Date          	| Version    	| created under        	| Author          	| Remark *)
+(*====================================================================================================================================================*)
+(*11/01/2026   	| 1.00      		| TC3		  		| N. Kersting       | first release *)
+(*11/01/2026   	| 1.01      		| TC3		  		| N.  Kersting       | Ringbuffer implementiert - neueste oben *)
+(*11/01/2026   	| 1.02      		| TC3		  		| N.  Kersting       | Array wird geleert wenn Execute FALSE ist *)
+(*12/01/2026   	| 1.03      		| TC3		  		| N.  Kersting       | Reset eingang zum zurücksetzen des gesamten Arrays *)
+(*====================================================================================================================================================*)
+FUNCTION_BLOCK fb_RS485Logger
+VAR_INPUT
+	I_bExecute				: BOOL := TRUE;								(* Enable/Disable Logging *)
+	I_bReset				: BOOL;										(* Reset Log Buffer *)
+	I_sTxTelegram			:STRING(255);								(* TX Telegramm zum Logging *)
+	I_sRxTelegram			:STRING(255);								(* RX Telegramm zum Logging *)
+END_VAR
+VAR_OUTPUT
+	Q_asLogBuffer			:ARRAY[1..50] OF STRING(255);				(* Log Buffer mit max.  200 Zeilen *)
+	Q_iLogIndex				:INT;										(* Aktuelle Index Position *)
+	Q_iLogCount				:INT;										(* Anzahl der geloggten Einträge *)
+END_VAR
+VAR
+	sTxLast					: STRING(255) := '';						(* Letzter TX String zum Vergleich *)
+	sRxLast					: STRING(255) := '';						(* Letzter RX String zum Vergleich *)
+	bExecuteLast			: BOOL := TRUE;								(* Letzter Execute Status *)
+	iWriteIndex				: INT := 1;									(* Schreibposition Ringbuffer *)
+	iLogCount				:INT := 0;									(* Gesamtanzahl Logs *)
+	sLogEntry				: STRING(255);								(* Temporärer Log Eintrag *)
+	i, h					: INT;										(* Zähler *)
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*============================================================================================*)
+(* Reset Log Buffer - leert das komplette Array *)
+IF I_bReset
+THEN
+	FOR i := 1 TO 50 BY 1 DO
+		Q_asLogBuffer[i] := '';
+	END_FOR
+	iLogCount := 0;
+	sTxLast := '';
+	sRxLast := '';
+	RETURN;
+END_IF
+
+(*============================================================================================*)
+(* Logging deaktiviert - nur schreiben pausieren *)
+IF NOT I_bExecute
+THEN
+	RETURN;
+END_IF
+
+(*============================================================================================*)
+(* TX Telegramm Logging *)
+IF I_sTxTelegram <> '' 
+	AND I_sTxTelegram <> sTxLast
+THEN
+	(* Alle Zeilen nach unten verschieben - rückwärts von 199 bis 1 *)
+	FOR h := 49 TO 1 BY -1 DO
+		Q_asLogBuffer[h + 1] := Q_asLogBuffer[h];
+	END_FOR
+	
+	(* Neuer Eintrag oben *)
+	sLogEntry := CONCAT('TX: ', I_sTxTelegram);
+	Q_asLogBuffer[1] := sLogEntry;
+	sTxLast := I_sTxTelegram;
+	
+	(* Counter erhöhen, aber max. 200 *)
+	IF iLogCount < 50
+	THEN
+		iLogCount := iLogCount + 1;
+	END_IF
+END_IF
+
+(*============================================================================================*)
+(* RX Telegramm Logging *)
+IF I_sRxTelegram <> '' 
+	AND I_sRxTelegram <> sRxLast
+THEN
+	(* Alle Zeilen nach unten verschieben - rückwärts von 199 bis 1 *)
+	FOR h := 49 TO 1 BY -1 DO
+		Q_asLogBuffer[h + 1] := Q_asLogBuffer[h];
+	END_FOR
+	
+	(* Neuer Eintrag oben *)
+	sLogEntry := CONCAT('RX: ', I_sRxTelegram);
+	Q_asLogBuffer[1] := sLogEntry;
+	sRxLast := I_sRxTelegram;
+	
+	(* Counter erhöhen, aber max. 200 *)
+	IF iLogCount < 50
+	THEN
+		iLogCount := iLogCount + 1;
+	END_IF
+END_IF
+
+(*============================================================================================*)
+(* Output Parameter aktualisieren *)
+Q_iLogCount := iLogCount;]]></ST>
+    </Implementation>
+    <LineIds Name="fb_RS485Logger">
+      <LineId Id="274" Count="65" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,245 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="fb_BusTasterAdvancedEvent_4F" Id="{95d2ddfe-16d1-4a2e-bed4-0dd8dbce7178}" SpecialFunc="None">
+    <Declaration><![CDATA[(*======================================================================================================================================*)
+(*//=============================================================================\\
+||  _   _ _  __  _         _                        _   _                      ||
+|| | \ | | |/ / / \  _   _| |_ ___  _ __ ___   __ _| |_(_) ___  _ __         ||
+|| |  \| | ' / / _ \| | | | __/ _ \| '_ ` _ \ / _` | __| |/ _ \| '_ \        ||
+|| | |\  | . \/ ___ \ |_| | || (_) | | | | | | (_| | |_| | (_) | | | |       ||
+|| |_| \_|_|\_\_/  \_\__,_|\__\___/|_| |_| |_|\__,_|\__|_|\___/|_| |_|       ||
+||                                                                             ||
+\\=============================================================================//
+fb_BusTasterAdvancedEvent:	Dieser Baustein sieht Taster Events und wertet diese aus, möglichst effizient.
+								Die Vorgängerversion: fb_BusTasterEvent hat durchgehend die CONCAT funktion für die Erstellung der Suchstrings 
+								genutzt, wodurch die CPU Last erhöht wurde.   *)
+(*
+Date          	| Version    	| created under        	| Author          	| Remark *)
+(*====================================================================================================================================================*)
+(*29/04/2025   	| 1.00      		| TC3		  		| N.Kersting       | first release *)
+(*13/08/2025   	| 1.01      		| TC3		  		| N.Kersting       | Neuer Aufbau, um Leistung zu sparen wegen hoher CPU Auslastung *)
+(*27/08/2025   	| 1.02      		| TC3		  		| N.Kersting       | Reset hinzugefügt *)
+(*07/09/2025   	| 1.03      		| TC3		  		| N.Kersting       | Zykluszeit Optimierung, es wird nur gelesen, wenn String gefüllt ist *)
+(*09/09/2025   	| 1.04      		| TC3		  		| N.Kersting       | Zykluszeit Optimierung, Wirklich nur einen Zyklus suchen *)
+(*23/01/2026   	| 1.05      		| TC3		  		| N.Kersting       | Suchstring wird nun einheitlich mit der funktion: F_RS485HB_TO_ASCII_RX gebildet *)
+(*25/01/2026   	| 2.00      		| TC3		  		| N.Kersting       | Suchstring umstellung auf ASCII_RS485 Funktion *)
+(*26/01/2026   	| 2.01      		| TC3		  		| N.Kersting       | Erweiterung auf Angeforderte Suchstrings (rStatus) *)
+(*====================================================================================================================================================*)
+FUNCTION_BLOCK fb_BusTasterAdvancedEvent_4F
+VAR_INPUT
+	 I_bExecute				:BOOL := TRUE;	// Aktiviert den Baustein 
+	 I_bReset				:BOOL;
+	 I_diID         		:DINT;     // Geräte-ID (z.B. '12345')
+	 I_iInstID				:INT 	:=	17;
+	 I_sReceivedString		:STRING(255);	
+	 I_bFaultDetection		:BOOL := FALSE;		(* Soll erkennen, ob ein Telegramm für das zurücksetzen eines Tasters nicht gekommen ist *)
+	 I_tFaultDetectTime		:TIME := T#10S;
+END_VAR
+VAR_OUTPUT
+	Q_bOut					:ARRAY[1..4] OF  BOOL;
+	Q_bStartupDone			:BOOL;
+END_VAR
+VAR
+	i						:INT;
+	tonFaultInput			:ARRAY[1..4] OF ton;
+	findString0				:ARRAY[1..4] OF STRING(255) ;
+	findString1				:ARRAY[1..4] OF STRING(255) ;
+	findString2				:ARRAY[1..4] OF STRING(255) ; 	(* Angeforderter Status AUS*)
+	findString3				:ARRAY[1..4] OF STRING(255) ;	(* Angeforderter Status EIN *)
+	
+	bStartupStart			:BOOL;
+	bStartupDone			:BOOL;
+	
+	iStartup				:INT;
+	sLastString				:STRING(255);
+	bNeedProcess			:BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* Automatische Fehlererkennung *)
+IF NOT I_bExecute
+	OR (I_diID = 0)
+	OR (I_iInstID = 0)
+THEN
+	iStartup := 0;
+END_IF
+
+(* Warten, ob der String sich geändert hat*)
+bNeedProcess :=	(I_sReceivedString <> sLastString) 
+				AND (I_sReceivedString <> '');
+
+CASE iStartup OF 
+(*=====================================*)
+0 :	(* INIT *)
+	bStartupDone := FALSE;
+	bStartupStart := FALSE;
+	bNeedProcess := FALSE;
+	sLastString := '';
+	
+	FOR i := 1 TO 4 BY 1 DO
+		
+		Q_bOut[i] := FALSE;
+		
+		tonFaultInput[i](
+			IN := FALSE);
+	END_FOR	
+	
+	IF I_bExecute
+		AND NOT bStartupDone
+		AND NOT I_bReset
+		AND (I_diID <> 0)
+		AND (I_iInstID <>0)
+	THEN
+		i := 1;
+		bStartupStart := TRUE;
+		iStartup := iStartup +10;
+	END_IF
+	
+(*=====================================*)
+10 :(* String vorbereiten *)	
+	
+	FOR i := 1 TO 4 BY 1 DO
+		findString0[i] := F_RS485HB_TO_ASCII_RX(
+								I_diID			:= I_diID, 
+								I_iInstID		:= I_iInstID+i,	
+								I_EnumHBUnitTX	:= E_EnumHBUnitTX.E_HB_UNIT_BTN, 	
+								I_EnumHBCmdRX	:= E_EnumHBCmdRX.E_HB_CMD_STATUS , 
+								I_iP1			:= 0);
+		
+		findString1[i] := F_RS485HB_TO_ASCII_RX(
+								I_diID			:= I_diID, 
+								I_iInstID		:= I_iInstID+i,	
+								I_EnumHBUnitTX	:= E_EnumHBUnitTX.E_HB_UNIT_BTN, 	
+								I_EnumHBCmdRX	:= E_EnumHBCmdRX.E_HB_CMD_STATUS , 
+								I_iP1			:= 1);
+			
+		findString2[i] := F_RS485HB_TO_ASCII_RX(
+								I_diID			:= I_diID, 
+								I_iInstID		:= I_iInstID+i,	
+								I_EnumHBUnitTX	:= E_EnumHBUnitTX.E_HB_UNIT_BTN, 	
+								I_EnumHBCmdRX	:= E_EnumHBCmdRX.E_HB_CMD_rSTATUS , 
+								I_iP1			:= 0);
+		
+		findString3[i] := F_RS485HB_TO_ASCII_RX(
+								I_diID			:= I_diID, 
+								I_iInstID		:= I_iInstID+i,	
+								I_EnumHBUnitTX	:= E_EnumHBUnitTX.E_HB_UNIT_BTN, 	
+								I_EnumHBCmdRX	:= E_EnumHBCmdRX.E_HB_CMD_rSTATUS , 
+								I_iP1			:= 1);
+	END_FOR
+	
+	IF i >= 4 THEN
+		bStartupStart := FALSE;
+		iStartup := 999;
+	END_IF
+	
+(*=====================================*)
+999 :(* READY *)
+	bStartupDone := TRUE;
+	
+	IF I_bReset 
+	THEN
+		iStartup := 0;
+	ELSE
+		IF bNeedProcess
+		THEN
+			FOR i := 1 TO 4 BY 1 DO			
+				IF I_bFaultDetection
+				THEN
+					tonFaultInput[i](
+						IN := Q_bOut[i],
+						PT := I_tFaultDetectTime);
+				END_IF
+		
+				IF ((FIND(I_sReceivedString,findString0[i]) <>0	(* Automatischer Status AUS*)
+					OR FIND(I_sReceivedString,findString2[i]) <>0)  (* Angeforderter Status AUS*)
+					AND Q_bOut[i])
+					OR ( tonFaultInput[i].Q
+						AND I_bFaultDetection)
+				THEN
+					Q_bOut[i] := FALSE;
+				ELSIF
+					((FIND(I_sReceivedString,findString1[i]) <>0 (* Automatischer Status EIN *)
+						OR FIND(I_sReceivedString,findString3[i]) <>0)	(* Angeforderter Status EIN*)
+					AND NOT Q_bOut[i])
+				THEN
+					Q_bOut[i] := TRUE;
+				END_IF
+			END_FOR
+				
+			sLastString :=	I_sReceivedString;	(* Letzten String Speichern *)
+		END_IF
+	END_IF
+	
+END_CASE
+
+Q_bStartupDone := bStartupDone;]]></ST>
+    </Implementation>
+    <LineIds Name="fb_BusTasterAdvancedEvent_4F">
+      <LineId Id="163" Count="0" />
+      <LineId Id="410" Count="0" />
+      <LineId Id="543" Count="0" />
+      <LineId Id="845" Count="0" />
+      <LineId Id="498" Count="1" />
+      <LineId Id="497" Count="0" />
+      <LineId Id="718" Count="0" />
+      <LineId Id="716" Count="0" />
+      <LineId Id="715" Count="0" />
+      <LineId Id="717" Count="0" />
+      <LineId Id="500" Count="0" />
+      <LineId Id="309" Count="0" />
+      <LineId Id="429" Count="0" />
+      <LineId Id="417" Count="0" />
+      <LineId Id="442" Count="1" />
+      <LineId Id="714" Count="0" />
+      <LineId Id="761" Count="1" />
+      <LineId Id="427" Count="0" />
+      <LineId Id="419" Count="4" />
+      <LineId Id="413" Count="0" />
+      <LineId Id="425" Count="1" />
+      <LineId Id="414" Count="0" />
+      <LineId Id="612" Count="0" />
+      <LineId Id="539" Count="1" />
+      <LineId Id="415" Count="0" />
+      <LineId Id="501" Count="0" />
+      <LineId Id="493" Count="0" />
+      <LineId Id="416" Count="0" />
+      <LineId Id="411" Count="0" />
+      <LineId Id="431" Count="0" />
+      <LineId Id="430" Count="0" />
+      <LineId Id="412" Count="0" />
+      <LineId Id="827" Count="0" />
+      <LineId Id="458" Count="0" />
+      <LineId Id="839" Count="4" />
+      <LineId Id="447" Count="1" />
+      <LineId Id="833" Count="4" />
+      <LineId Id="451" Count="0" />
+      <LineId Id="851" Count="0" />
+      <LineId Id="853" Count="11" />
+      <LineId Id="852" Count="0" />
+      <LineId Id="468" Count="0" />
+      <LineId Id="503" Count="0" />
+      <LineId Id="502" Count="0" />
+      <LineId Id="494" Count="0" />
+      <LineId Id="463" Count="0" />
+      <LineId Id="457" Count="0" />
+      <LineId Id="504" Count="0" />
+      <LineId Id="456" Count="0" />
+      <LineId Id="469" Count="0" />
+      <LineId Id="471" Count="0" />
+      <LineId Id="495" Count="0" />
+      <LineId Id="584" Count="3" />
+      <LineId Id="650" Count="1" />
+      <LineId Id="654" Count="7" />
+      <LineId Id="865" Count="12" />
+      <LineId Id="673" Count="1" />
+      <LineId Id="719" Count="1" />
+      <LineId Id="608" Count="0" />
+      <LineId Id="470" Count="0" />
+      <LineId Id="492" Count="0" />
+      <LineId Id="434" Count="0" />
+      <LineId Id="197" Count="0" />
+      <LineId Id="199" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

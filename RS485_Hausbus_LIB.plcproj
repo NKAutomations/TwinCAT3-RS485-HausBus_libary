@@ -19,7 +19,7 @@
     <Company>NKAutomation</Company>
     <Released>true</Released>
     <Title>RS485_Hausbus_Kernal</Title>
-    <ProjectVersion>1.4.9.5</ProjectVersion>
+    <ProjectVersion>1.4.9.6</ProjectVersion>
     <Author>N.Kersting</Author>
     <Description>Der reine RS485 Hausbus Kernal. </Description>
   </PropertyGroup>
@@ -111,100 +111,100 @@
     <Compile Include="POUs\Hilfsbausteine\fb_timeDiffLite_libversion.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_CMD\fb_RS485HB_StringBuilder.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_CMD\F_RS485HB_TO_ASCII.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_CMD\F_RS485HB_TO_ASCII_RX.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_CMD\F_RS485HB_TO_ASCII_RX_PING.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_Events\fb_BusBrsEvent.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_Events\fb_BusDimmEvent.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_Events\fb_BusPingEvent.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_Events\fb_BusRhdEvent.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_Events\fb_BusTasterAdvancedEvent_4F.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_Events\fb_BusTasterAdvancedEvent_6F.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_Events\fb_BusTasterAdvancedEvent_8F.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_Events\fb_BusTempEvent.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\FB\fb_FilterArray.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\fb_RS485IdScan.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\OLD\fb_RS485FiFoMaster_old.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\OLD\fb_RS485Ping.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\RS485_Master\fb_RS485FiFoMaster.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\RS485_Master\fb_RS485Logger.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\RS485_Master\fb_RS485Startup.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_BusTaster\fb_TasterBus6F.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_CYD\fb_BusTasterEvent.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_CYD\fb_CYDBus6F.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_CYD\fb_StringConvCYDService.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_CYD\fb_StringConvCYDWeb.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_CYD\fb_StringConvCYDWifi.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_CYD\fb_StringConvTB6F.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_Dimmer\fb_DimmerBus6F.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_RelaisModul\fb_RelaisBus16F.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_TempSensor\fb_TempBus4F.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\02_UniBaustein\fb_RS485PingCheck.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\02_UniBaustein\fb_UniHBComOperator.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\MAIN.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_CMD\fb_RS485HB_StringBuilder.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_CMD\F_RS485HB_TO_ASCII.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_CMD\F_RS485HB_TO_ASCII_RX.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_CMD\F_RS485HB_TO_ASCII_RX_PING.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_Events\fb_BusBrsEvent.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_Events\fb_BusDimmEvent.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_Events\fb_BusPingEvent.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_Events\fb_BusRhdEvent.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_Events\fb_BusTasterAdvancedEvent_4F.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_Events\fb_BusTasterAdvancedEvent_6F.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_Events\fb_BusTasterAdvancedEvent_8F.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_Events\fb_BusTempEvent.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\FB\fb_FilterArray.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\fb_RS485IdScan.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\OLD\fb_RS485FiFoMaster_old.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\OLD\fb_RS485Ping.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\RS485_Master\fb_RS485FiFoMaster.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\RS485_Master\fb_RS485Logger.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\00_RS485 COM\RS485_Master\fb_RS485Startup.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_BusTaster\fb_TasterBus6F.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_CYD\fb_BusTasterEvent.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_CYD\fb_CYDBus6F.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_CYD\fb_StringConvCYDService.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_CYD\fb_StringConvCYDWeb.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_CYD\fb_StringConvCYDWifi.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_CYD\fb_StringConvTB6F.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_Dimmer\fb_DimmerBus6F.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_RelaisModul\fb_RelaisBus16F.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\01_TempSensor\fb_TempBus4F.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\02_UniBaustein\fb_RS485PingCheck.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\RS485_Hausbus_FB\02_UniBaustein\fb_UniHBComOperator.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Project Information\F_GetCompany.TcPOU">
@@ -236,19 +236,19 @@
     <Folder Include="GVLs" />
     <Folder Include="GVLs\RS485_HausBus" />
     <Folder Include="POUs\Hilfsbausteine" />
-    <Folder Include="POUs\RS485_Hausbus_FB" />
-    <Folder Include="POUs\RS485_Hausbus_FB\00_CMD" />
-    <Folder Include="POUs\RS485_Hausbus_FB\00_Events" />
-    <Folder Include="POUs\RS485_Hausbus_FB\00_RS485 COM" />
-    <Folder Include="POUs\RS485_Hausbus_FB\00_RS485 COM\FB" />
-    <Folder Include="POUs\RS485_Hausbus_FB\00_RS485 COM\OLD" />
-    <Folder Include="POUs\RS485_Hausbus_FB\00_RS485 COM\RS485_Master" />
-    <Folder Include="POUs\RS485_Hausbus_FB\01_BusTaster" />
-    <Folder Include="POUs\RS485_Hausbus_FB\01_CYD" />
-    <Folder Include="POUs\RS485_Hausbus_FB\01_Dimmer" />
-    <Folder Include="POUs\RS485_Hausbus_FB\01_RelaisModul" />
-    <Folder Include="POUs\RS485_Hausbus_FB\01_TempSensor" />
-    <Folder Include="POUs\RS485_Hausbus_FB\02_UniBaustein" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_CMD" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_Events" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\FB" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\OLD" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\00_RS485 COM\RS485_Master" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_BusTaster" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_CYD" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_Dimmer" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_RelaisModul" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\01_TempSensor" />
+    <Folder Include="POUs\Hilfsbausteine\RS485_Hausbus_FB\02_UniBaustein" />
     <Folder Include="Project Information" />
     <Folder Include="Version" />
     <Folder Include="VISUs" />
