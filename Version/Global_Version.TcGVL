@@ -7,7 +7,7 @@
 // This function has been automatically generated from the project information.
 VAR_GLOBAL CONSTANT
 	{attribute 'const_non_replaced'}
-	stLibVersion_RS485_Hausbus_Kernal : ST_LibVersion := (iMajor := 1, iMinor := 4, iBuild := 9, iRevision := 6, nFlags := 1, sVersion := '1.4.9.6');
+	stLibVersion_RS485_Hausbus_Kernal : ST_LibVersion := (iMajor := 1, iMinor := 4, iBuild := 9, iRevision := 8, nFlags := 1, sVersion := '1.4.9.8');
 END_VAR
 ]]></Declaration>
   </GVL>

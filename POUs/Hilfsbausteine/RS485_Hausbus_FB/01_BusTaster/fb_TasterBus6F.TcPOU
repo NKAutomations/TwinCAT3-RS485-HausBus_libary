@@ -198,6 +198,7 @@ CASE fbUniHBComOperator.Q_EState OF
 (*///////////////////////////////////////////////////////////*)
 E_HB_Device_Init:
 		bEventStartupDone := FALSE;
+		
 		Q_stOutput.sState 		:=	CONCAT(I_stInput.sName,'| ');
 		Q_stOutput.sState		:=	CONCAT(Q_stOutput.sState, fbUniHBComOperator.Q_sState);
 		
@@ -207,6 +208,8 @@ E_HB_Device_EventStartup:
 		bResetDone := FALSE;
 		bStartupDone := FALSE;
 		iStepSet := 0;
+		iStepState := 0;
+		
 		Q_stOutput.sState 		:=	CONCAT(I_stInput.sName,'| ');
 		Q_stOutput.sState		:=	CONCAT(Q_stOutput.sState, fbUniHBComOperator.Q_sState);
 (*///////////////////////////////////////////////////////////*)
@@ -222,6 +225,8 @@ E_HB_Device_Reset:
 E_HB_Device_WaitCom:
 		ac00_Event();
 		iStepSet := 0;
+		iStepState := 0;
+		
 		Q_stOutput.sState 		:=	CONCAT(I_stInput.sName,'| ');
 		Q_stOutput.sState		:=	CONCAT(Q_stOutput.sState, fbUniHBComOperator.Q_sState);
 (*///////////////////////////////////////////////////////////*)		
@@ -1250,19 +1255,24 @@ END_FOR]]></ST>
       <LineId Id="2537" Count="0" />
       <LineId Id="2599" Count="0" />
       <LineId Id="2542" Count="0" />
+      <LineId Id="3132" Count="0" />
       <LineId Id="2600" Count="0" />
       <LineId Id="2717" Count="1" />
       <LineId Id="2530" Count="0" />
       <LineId Id="2538" Count="0" />
       <LineId Id="2535" Count="0" />
       <LineId Id="2596" Count="1" />
-      <LineId Id="2564" Count="2" />
+      <LineId Id="2564" Count="0" />
+      <LineId Id="3128" Count="1" />
+      <LineId Id="2565" Count="1" />
       <LineId Id="2536" Count="0" />
       <LineId Id="2534" Count="0" />
       <LineId Id="2539" Count="1" />
       <LineId Id="2555" Count="4" />
       <LineId Id="2543" Count="2" />
-      <LineId Id="2560" Count="2" />
+      <LineId Id="2560" Count="0" />
+      <LineId Id="3130" Count="1" />
+      <LineId Id="2561" Count="1" />
       <LineId Id="2548" Count="0" />
       <LineId Id="2547" Count="0" />
       <LineId Id="2550" Count="0" />

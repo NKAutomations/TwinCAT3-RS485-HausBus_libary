@@ -175,8 +175,7 @@ bUseTXCollisionDetection := I_bUseTXCollisionDetection;
 (* Receive Collision Dectetion
    Ein gefüllter RX Puffer allein ist keine Kollision.
    Entscheidend ist, ob der ReceiveString255 gerade aktiv empfängt oder der Buffer einen Fehler meldet. *)
-bRXCollisionDetected :=	(fbReceive.Busy
-						OR I_pRxBuffer^.blocked
+bRXCollisionDetected :=	(I_pRxBuffer^.blocked
 						OR I_pRxBuffer^.Error <> 0)
 						AND bUseRXCollisionDetection;
 						
@@ -609,13 +608,6 @@ CASE iStepFiFo OF
 				iStepFiFo := 0;
 			END_IF
 		END_IF
-	ELSE
-		(* Prüfen ob ein Sendeauftrag anliegt *)
-		IF icntFiFo >0
-		THEN
-			tonPingVerz.IN := FALSE;
-			iStepFiFo := 0; (* Sende FiFo leeren *)
-		END_IF  
 	END_IF
 ELSE
 (*============================================================================================*)
@@ -753,7 +745,6 @@ fbRS485Search(
       <LineId Id="1619" Count="0" />
       <LineId Id="1599" Count="0" />
       <LineId Id="2692" Count="1" />
-      <LineId Id="807" Count="0" />
       <LineId Id="1582" Count="0" />
       <LineId Id="1631" Count="0" />
       <LineId Id="809" Count="0" />
@@ -906,7 +897,8 @@ fbRS485Search(
       <LineId Id="789" Count="0" />
       <LineId Id="641" Count="0" />
       <LineId Id="1719" Count="0" />
-      <LineId Id="642" Count="15" />
+      <LineId Id="642" Count="6" />
+      <LineId Id="656" Count="1" />
       <LineId Id="547" Count="0" />
       <LineId Id="1347" Count="0" />
       <LineId Id="1313" Count="0" />
