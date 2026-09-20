@@ -52,6 +52,8 @@ Date          	| Version    	| created under        	| Author          	| Remark
 (*20/09/2026   	| 9.00      		| TC3		  		| N.Kersting       | Selbsttest für Abfrage der eingänge *)
 (*20/09/2026   	| 9.01      		| TC3		  		| N.Kersting       | Selbsttest Bugfix Schrittkette *)
 (*20/09/2026   	| 9.02      		| TC3		  		| N.Kersting       | Selbsttest Bugfix Schrittkette *)
+(*20/09/2026   	| 9.03      		| TC3		  		| N.Kersting       | Selfcheck nun nur, wenn Globaler Pingmerker nicht aktiv *)
+(*20/09/2026   	| 9.04      		| TC3		  		| N.Kersting       | Kleine anpassung Autoping *)
 (*====================================================================================================================================================*)
 FUNCTION_BLOCK fb_TasterBus6F
 VAR_INPUT
@@ -62,7 +64,7 @@ VAR_INPUT
 	I_bFiFoDone			:BOOL;
 	I_FifoID			:INT;
 	I_bPingStart		:BOOL;						(* Ping Done vom Vorheriegen*)
-	I_bSelfCheck		:BOOL := FALSE;				(* 1x Eingänge prüfen *)
+	I_bSelfCheck		:BOOL := FALSE;				(* 1x Eingänge prüfen Achtung Flanke!*)
 	I_bSelfCheckAuto	:BOOL := FALSE;				(* Eingänge Automatisch Intervallsmäßig prüfen *)
 	
 	I_stInput			:ST_BusTaster6F_Input;
@@ -381,20 +383,16 @@ tonSelfCheck(
 			AND I_bSelfCheckAuto,
 	PT := tSelfCheckStatus);
 
-IF I_bSelfCheckAuto
+IF (tonSelfCheck.Q
+	AND I_bSelfCheckAuto)
+	OR (NOT tonSelfCheck.Q
+	AND I_bSelfCheck)
+	AND NOT bGlobalPingActive (* Achtung Globale Vaariable, Wenn Ping aktiv ist *)
 THEN
-	IF tonSelfCheck.Q
-	THEN
-		bSelfCheckAnforderung := TRUE;
-	END_IF
-ELSE
-	IF I_bSelfCheck
-	THEN
-		bSelfCheckAnforderung := TRUE;
-	END_IF	
+	bSelfCheckAnforderung := TRUE;
 END_IF
-
-(* Einfaches Setzen der LED Helligkeiten (0-100 Prozent *)
+	
+(*setzen der LED Helligkeiten (0-100 Prozent *)
 (* Neu, es werden alle LEDs zu einem String zusammengefügt und Gleichzeitig gesetzt *)
 cntchangesDimm := 0;
 cntChangesDimmExt :=0;
@@ -851,6 +849,7 @@ CASE iStepSet OF
 		sFiFoSend := ''; 
 		
 		IF bSelfCheckAnforderung
+			AND NOT I_bSelfCheck
 		THEN
 			bSelfCheckAnforderung := FALSE;
 			iStepSet := 0;
@@ -1305,18 +1304,15 @@ END_FOR]]></ST>
       <LineId Id="1217" Count="0" />
       <LineId Id="1202" Count="0" />
       <LineId Id="1183" Count="0" />
-      <LineId Id="1193" Count="0" />
-      <LineId Id="1184" Count="0" />
       <LineId Id="1194" Count="0" />
-      <LineId Id="1199" Count="2" />
-      <LineId Id="1198" Count="0" />
-      <LineId Id="1196" Count="0" />
-      <LineId Id="1204" Count="1" />
-      <LineId Id="1208" Count="0" />
-      <LineId Id="1206" Count="0" />
-      <LineId Id="1195" Count="0" />
-      <LineId Id="1188" Count="0" />
+      <LineId Id="1199" Count="0" />
+      <LineId Id="1301" Count="0" />
+      <LineId Id="1303" Count="1" />
+      <LineId Id="1310" Count="0" />
+      <LineId Id="1200" Count="1" />
       <LineId Id="58" Count="0" />
+      <LineId Id="1307" Count="0" />
+      <LineId Id="1306" Count="0" />
       <LineId Id="151" Count="0" />
       <LineId Id="736" Count="0" />
       <LineId Id="725" Count="0" />
@@ -1557,7 +1553,9 @@ END_FOR]]></ST>
       <LineId Id="248" Count="1" />
       <LineId Id="674" Count="0" />
       <LineId Id="253" Count="0" />
-      <LineId Id="1218" Count="1" />
+      <LineId Id="1218" Count="0" />
+      <LineId Id="1308" Count="0" />
+      <LineId Id="1219" Count="0" />
       <LineId Id="1224" Count="0" />
       <LineId Id="1222" Count="0" />
       <LineId Id="1220" Count="0" />

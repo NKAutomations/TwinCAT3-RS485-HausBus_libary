@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
   <POU Name="fb_DimmerBus6F" Id="{e00c08a7-7aa1-4c91-9b6b-5f9dae195386}" SpecialFunc="None">
     <Declaration><![CDATA[(*======================================================================================================================================*)
 (*//=============================================================================\\
@@ -53,6 +53,7 @@ Date          	| Version    	| created under        	| Author          	| Remark
 (*25/01/2026   	| 7.01      		| TC3		  		| N.Kersting       | Eventbausteine alle komplett überarbeitet mit den neuen ASCII_RS485 Funktionen *)
 (*24/03/2026   	| 7.02      		| TC3		  		| N.Kersting       | Statecheck mit Fehlerschleife, erst wenn 3 mal der Status falsch ist, wird ein fehler ausgegeben *)
 (*25/03/2026   	| 7.03      		| TC3		  		| N.Kersting       | Statecheck komplett neu aufgebaut, nur noch gucken ob alle kanäle aus sind (Viel einfacher)*)
+(*20/09/2026   	| 7.04      		| TC3		  		| N.Kersting       | Neuen Globaln Pingmerker integriert, für Kanalabfrage bedingung*)
 (*====================================================================================================================================================*)
 FUNCTION_BLOCK fb_DimmerBus6F
 VAR_INPUT
@@ -382,10 +383,12 @@ END_FOR
 	alle Kanäle auch wirklich aus sind *)
 IF bStateCheck
 THEN
+	(* Verzögert prüfen ob wirklich alle Kanäle aus sind*)
 	tonStatusVerz.IN :=  NOT bDimmKanalAktiv
 							AND NOT bSendeAnforderung
 							AND (iStepSet =0)
-							AND NOT bStateCheckDone ; (* Verzögert prüfen ob wirklich alle Kanäle aus sind*)
+							AND NOT bStateCheckDone 
+							AND NOT bGlobalPingActive; 
 	
 ELSE
 	tonStatusRecieveVerz.IN := FALSE;
@@ -1263,9 +1266,11 @@ END_CASE
       <LineId Id="1432" Count="0" />
       <LineId Id="1196" Count="0" />
       <LineId Id="1198" Count="0" />
+      <LineId Id="1584" Count="0" />
       <LineId Id="1208" Count="0" />
       <LineId Id="1436" Count="1" />
       <LineId Id="1467" Count="0" />
+      <LineId Id="1583" Count="0" />
       <LineId Id="1462" Count="0" />
       <LineId Id="1206" Count="0" />
       <LineId Id="1209" Count="0" />

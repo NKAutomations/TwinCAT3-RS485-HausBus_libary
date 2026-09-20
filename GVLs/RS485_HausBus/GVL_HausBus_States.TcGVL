@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <GVL Name="GVL_HausBus_States" Id="{fbc00721-7b92-41c8-9e01-44e76656c0d7}">
+    <Declaration><![CDATA[{attribute 'Tc2GvlVarNames'}
+VAR_GLOBAL
+	bGlobalPingActive	:BOOL;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

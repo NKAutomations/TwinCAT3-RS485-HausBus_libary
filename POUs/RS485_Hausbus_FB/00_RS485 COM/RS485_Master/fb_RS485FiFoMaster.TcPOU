@@ -294,6 +294,9 @@ CASE iStepFiFo OF
 						iFiFoRow := 1; 
 					END_IF
 					
+					(* Globalen Merker Setzen, dass Ping aktiv ist *)
+					bGlobalPingActive := TRUE;
+					
 					(* Ping senden TX*)
 					iStepFiFo := 10;	
 				END_IF
@@ -515,6 +518,7 @@ CASE iStepFiFo OF
 		THEN
 			iFiFoRow := iFiFoRow+1; (* Nächste Zeile, bis etwas drin Steht *)
 		ELSE
+			bGlobalPingActive := FALSE;
 			bPingStart := FALSE;
 			iPingRow := I_nMaxDevices;
 			iStepFiFo := 0;	(* Alle Zeilen Abgearbeitet *)
@@ -546,6 +550,7 @@ CASE iStepFiFo OF
 			THEN
 				iStepFiFo := 10; (* nächsten Ping senden *)
 			ELSE
+				bGlobalPingActive := FALSE;
 				iStepFiFo := 0;
 			END_IF
 		END_IF
@@ -804,7 +809,9 @@ fbRS485Search(
       <LineId Id="2716" Count="0" />
       <LineId Id="2265" Count="0" />
       <LineId Id="2260" Count="0" />
+      <LineId Id="2751" Count="1" />
       <LineId Id="2714" Count="0" />
+      <LineId Id="2750" Count="0" />
       <LineId Id="2717" Count="0" />
       <LineId Id="2254" Count="0" />
       <LineId Id="2253" Count="0" />
@@ -906,7 +913,9 @@ fbRS485Search(
       <LineId Id="1468" Count="2" />
       <LineId Id="2402" Count="1" />
       <LineId Id="2406" Count="0" />
-      <LineId Id="2409" Count="4" />
+      <LineId Id="2409" Count="3" />
+      <LineId Id="2753" Count="0" />
+      <LineId Id="2413" Count="0" />
       <LineId Id="2415" Count="0" />
       <LineId Id="2414" Count="0" />
       <LineId Id="2408" Count="0" />
@@ -924,7 +933,9 @@ fbRS485Search(
       <LineId Id="2185" Count="2" />
       <LineId Id="2216" Count="0" />
       <LineId Id="2417" Count="2" />
-      <LineId Id="2421" Count="2" />
+      <LineId Id="2421" Count="1" />
+      <LineId Id="2754" Count="0" />
+      <LineId Id="2423" Count="0" />
       <LineId Id="2420" Count="0" />
       <LineId Id="2182" Count="0" />
       <LineId Id="2212" Count="0" />
