@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <DUT Name="E_EnumHBUnitTX" Id="{05da8f2e-a63d-4c24-9fb2-68e943ee5676}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_EnumHBUnitTX :
+(	
+	E_HB_UNIT_SYS := 0,		(* SYS*)
+	E_HB_UNIT_BTN := 10,	(* BTN*)
+	E_HB_UNIT_OUT := 11,	(* OUT*)
+	E_HB_UNIT_LED := 12,	(* LED*)
+	E_HB_UNIT_TMP := 13,	(* TMP*)
+	E_HB_UNIT_RHD := 14,	(* RHD*)
+	E_HB_UNIT_BRS := 15,	(* BRS*)
+	E_HB_UNIT_DIM := 16,	(* DIM*)
+	E_HB_UNIT_LBN := 17		(* LBN*)
+);
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

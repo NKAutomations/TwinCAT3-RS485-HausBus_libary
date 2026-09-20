@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_BusDimmer6F_Output" Id="{4adbbdcc-afec-4342-a35f-e921d40b0b4f}">
+    <Declaration><![CDATA[TYPE ST_BusDimmer6F_Output :
+STRUCT
+	bInputs		    :ARRAY[1..4] OF BOOL;       (*aktueller Input Status (TRUE = gedrückt)*)
+	bCOM			:BOOL;						(*Zeigt die Kommunikation an *)
+	bStartupDone	:BOOL;
+	
+	iState			:BOOL;
+	sState			:STRING;
+	bError			:BOOL;
+	dwChanges		:DWORD;					(* Änderungszähler für Startups *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

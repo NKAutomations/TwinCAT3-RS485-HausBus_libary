@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <POU Name="F_RS485HB_TO_ASCII_RX" Id="{04babfd3-3a32-482c-b880-0e8ac0f3f6db}" SpecialFunc="None">
+    <Declaration><![CDATA[(*======================================================================================================================================*)
+(*//=============================================================================\\
+||  _   _ _  __  _         _                        _   _                      ||
+|| | \ | | |/ / / \  _   _| |_ ___  _ __ ___   __ _| |_(_) ___  _ __         ||
+|| |  \| | ' / / _ \| | | | __/ _ \| '_ ` _ \ / _` | __| |/ _ \| '_ \        ||
+|| | |\  | . \/ ___ \ |_| | || (_) | | | | | | (_| | |_| | (_) | | | |       ||
+|| |_| \_|_|\_\_/  \_\__,_|\__\___/|_| |_| |_|\__,_|\__|_|\___/|_| |_|       ||
+||                                                                             ||
+\\=============================================================================//
+F_RS485HB_TO_ASCII_RX:	Sonderfunktion um Hausbus Ascii Strings zu generieren speziell für Suchstring		*)
+(*
+Date          	| Version    	| created under        	| Author          	| Remark *)
+(*====================================================================================================================================================*)
+(*22/01/2026   	| 1.00      	| TC3		  			| N.Kersting        | first release *)
+(*====================================================================================================================================================*)
+FUNCTION F_RS485HB_TO_ASCII_RX : STRING(255)
+VAR_INPUT
+	I_diID				:DINT;				(* Device ID ( Steht auf dem Aufkleber und wird zur Identifizierung im BUS benötigt)*)
+	I_iInstID			:INT;				(* Instanz ID *)
+	I_EnumHBUnitTX		:E_EnumHBUnitTX;	(* Unit *)
+	I_EnumHBCmdRX		:E_EnumHBCmdRX;		(* Command *)
+	I_iP1				:INT;				(* Parameter 1 *)
+	
+END_VAR
+VAR
+	sStartZeichen		:BYTE := 16#FD;				(* Startzeichen Präfix *)
+	sEndZeichen			:BYTE := 16#FE;				(* Endzeichen Suffix *)
+	
+	Q_sOut			:STRING(255);
+	sUnit			:STRING(3);
+	bInvalidUnit	:BOOL;
+	
+	sCMD			:STRING(7);
+	bInvalidCMD		:BOOL;
+	
+	iParam			:INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[bInvalidUnit := FALSE;
+bInvalidCMD := FALSE;
+
+CASE I_EnumHBUnitTX OF
+E_EnumHBUnitTX.E_HB_UNIT_SYS:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_SYS; 	iParam := 0;	
+E_EnumHBUnitTX.E_HB_UNIT_BRS:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_BRS; 	iParam := 0;
+E_EnumHBUnitTX.E_HB_UNIT_BTN:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_BTN; 	iParam := 1;
+E_EnumHBUnitTX.E_HB_UNIT_DIM:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_DIM; 	iParam := 0;
+E_EnumHBUnitTX.E_HB_UNIT_LED:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_LED; 	iParam := 0;
+E_EnumHBUnitTX.E_HB_UNIT_OUT:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_OUT; 	iParam := 1;
+E_EnumHBUnitTX.E_HB_UNIT_RHD:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_RHD; 	iParam := 0;
+E_EnumHBUnitTX.E_HB_UNIT_TMP:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_TMP; 	iParam := 0;
+E_EnumHBUnitTX.E_HB_UNIT_LBN:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_LBN; 	iParam := 0;
+ELSE
+	bInvalidUnit := TRUE;
+	RETURN;
+END_CASE
+
+CASE I_EnumHBCmdRX OF
+E_EnumHBCmdRX.E_HB_CMD_rCONFIG:		sCMD :=		GVL_HausBus_ASCII_CONSTANT.HB_RX_rCONFIG;	
+E_EnumHBCmdRX.E_HB_CMD_rSTATUS:		sCMD :=		GVL_HausBus_ASCII_CONSTANT.HB_RX_rSTATUS;	
+E_EnumHBCmdRX.E_HB_CMD_STATUS:		sCMD :=		GVL_HausBus_ASCII_CONSTANT.HB_RX_STATUS;
+ELSE
+	bInvalidCMD := TRUE;
+	RETURN;
+END_CASE
+
+IF I_diID > 0
+THEN
+	IF I_iInstID > 0
+	THEN
+		IF NOT bInvalidUnit
+			AND NOT bInvalidCMD
+		THEN
+					
+			Q_sOut :=	CONCAT(F_ToCHR(sStartZeichen),DINT_TO_STRING(I_diID));
+			Q_sOut :=	CONCAT(Q_sOut,'.');
+			Q_sOut :=	CONCAT(Q_sOut,sUnit);
+			Q_sOut :=	CONCAT(Q_sOut,'.');
+			Q_sOut :=	CONCAT(Q_sOut,INT_TO_STRING(I_iInstID));
+			Q_sOut :=	CONCAT(Q_sOut,'.');
+			Q_sOut :=	CONCAT(Q_sOut,sCMD);
+			
+			CASE iParam OF
+			0:	Q_sOut :=	CONCAT(Q_sOut,'.');
+				(*Q_sOut :=	CONCAT(Q_sOut,F_ToCHR(sEndZeichen));*)
+			1:	Q_sOut :=	CONCAT(Q_sOut,'.');
+				Q_sOut :=	CONCAT(Q_sOut,INT_TO_STRING(I_iP1));
+				Q_sOut :=	CONCAT(Q_sOut,F_ToCHR(sEndZeichen));	
+			END_CASE
+		END_IF
+	END_IF
+END_IF
+
+F_RS485HB_TO_ASCII_RX:=Q_sOut;
+RETURN;
+
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="F_RS485HB_TO_ASCII_RX">
+      <LineId Id="19" Count="1" />
+      <LineId Id="215" Count="0" />
+      <LineId Id="218" Count="0" />
+      <LineId Id="474" Count="7" />
+      <LineId Id="472" Count="0" />
+      <LineId Id="227" Count="8" />
+      <LineId Id="240" Count="12" />
+      <LineId Id="458" Count="13" />
+      <LineId Id="432" Count="0" />
+      <LineId Id="293" Count="5" />
+      <LineId Id="217" Count="0" />
+      <LineId Id="216" Count="0" />
+      <LineId Id="117" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

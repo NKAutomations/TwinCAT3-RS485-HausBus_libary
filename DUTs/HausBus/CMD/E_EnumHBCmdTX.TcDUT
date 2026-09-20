@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <DUT Name="E_EnumHBCmdTX" Id="{b92fe1c0-2b97-4d09-9307-c772ccf491cc}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE E_EnumHBCmdTX :
+(	
+	E_HB_CMD_RESET := 0,	(* RESET*)
+	E_HB_CMD_gSTATUS := 100,	(* gSTATUS*)
+	E_HB_CMD_gCONFIG := 101,	(* gCONFIG*)
+	E_HB_CMD_SET_CFG := 200,	(* SET_CFG*)
+	E_HB_CMD_ON := 201,	(* ON*)
+	E_HB_CMD_OFF := 202,	(* OFF*)
+	E_HB_CMD_SET_MBR := 203,	(* SET_MBR*)
+	E_HB_CMD_ON_NP := 204,	(* ON _OHNE Parameter *)
+	E_HB_CMD_ON_OFF := 205	(* ON _OFF_ nur über Parameter *)
+);
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

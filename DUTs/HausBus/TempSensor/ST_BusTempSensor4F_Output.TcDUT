@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <DUT Name="ST_BusTempSensor4F_Output" Id="{8687df60-926e-4728-b1ef-57a66087ecf9}">
+    <Declaration><![CDATA[TYPE ST_BusTempSensor4F_Output :
+STRUCT	
+	lrTemp			:ARRAY[1..4] OF LREAL;					(* Temperatur Sensor	*)
+	
+	bCOM			:BOOL;					(*Zeigt die Kommunikation an *)
+	bStartupDone	:BOOL;
+	
+	iState			:BOOL;
+	sState			:STRING;
+	bError			:BOOL;
+	
+	tLastUpdateTemp	:ARRAY[1..4] OF TIME;					(* Zeit- Letztes Update Temperatur *)
+	
+	sLastUpdateTemp	:ARRAY[1..4] OF STRING(12);			(* Zeit- Letztes Update Temperatur Uhrzeit *)
+	
+	dwChanges		:DWORD;					(* Änderungszähler für Startups *)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

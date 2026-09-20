@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <GVL Name="GVL_HausBus_Functions" Id="{fbd7863d-91ff-425d-959c-4fadabb048d5}">
+    <Declaration><![CDATA[{attribute 'Tc2GvlVarNames'}
+VAR_GLOBAL
+(*================================================================================================================================*)		
+(* Changecounter aller Teilnehmer zurücksetzen *)		
+(*================================================================================================================================*)	
+	bResetChangesCounter_All			:BOOL := FALSE;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>
