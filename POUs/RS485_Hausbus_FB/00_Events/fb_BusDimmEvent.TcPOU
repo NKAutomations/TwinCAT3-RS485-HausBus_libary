@@ -49,8 +49,9 @@ END_VAR
     <Implementation>
       <ST><![CDATA[(* Automatische Fehlererkennung *)
 IF NOT I_bExecute
-	OR (I_diID = 0)
-	OR (I_iInstID = 0)
+	OR (I_diID <= 0)
+	OR (I_iInstID <= 0)
+	OR (I_iInstID > 32762)
 THEN
 	iStartup := 0;
 END_IF
@@ -76,8 +77,9 @@ CASE iStartup OF
 	IF I_bExecute
 		AND NOT bStartupDone
 		AND NOT I_bReset
-		AND (I_diID <> 0)
-		AND (I_iInstID <>0)
+		AND (I_diID > 0)
+		AND (I_iInstID > 0)
+		AND (I_iInstID <= 32762)
 	THEN
 		i := 1;
 		bStartupStart := TRUE;

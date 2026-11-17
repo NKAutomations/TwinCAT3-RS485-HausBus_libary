@@ -44,6 +44,8 @@ END_VAR
     <Implementation>
       <ST><![CDATA[bInvalidUnit := FALSE;
 bInvalidCMD := FALSE;
+      Q_sOut := '';
+      F_RS485HB_TO_ASCII := '';
 
 CASE I_EnumHBUnitTX OF
 E_EnumHBUnitTX.E_HB_UNIT_SYS:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_SYS; 	
@@ -82,6 +84,12 @@ ELSE
 	bInvalidCMD := TRUE;
 	RETURN;
 END_CASE
+
+IF sCMD = ''
+THEN
+	bInvalidCMD := TRUE;
+	RETURN;
+END_IF
 
 IF I_diID > 0
 THEN

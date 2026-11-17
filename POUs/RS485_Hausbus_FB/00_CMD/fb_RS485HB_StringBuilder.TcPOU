@@ -39,6 +39,7 @@ VAR
 	IDX 				:INT;
 	Trig				:r_trig;
 	nLength				:INT;
+	sFrame				:STRING(255);
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -47,138 +48,49 @@ END_VAR
 IF Trig.Q
 	AND I_bExecute
 THEN
-	IF I_diID <> 0
+	Q_bDone := FALSE;
+	Q_bError := FALSE;
+	Q_sOut := '';
+	IF (I_diID > 0)
+		AND (I_iInstID > 0)
+		AND (I_iCnt >= 1)
+		AND (I_iCnt <= 8)
 	THEN
-		IF I_iInstID <> 0
+		IF I_iInstID <= (32767 - (I_iCnt - 1))
 		THEN
-			IF I_iCnt <>0
-				AND I_iCnt <=8
+			FOR IDX := 1 TO I_iCnt BY 1 DO
+				sFrame := F_RS485HB_TO_ASCII(
+					I_diID,
+					I_iInstID + IDX - 1,
+					I_EnumHBUnitTX,
+					I_EnumHBCmdTX,
+					I_iP1[IDX],
+					I_iP2[IDX],
+					I_iP3[IDX],
+					I_iP4[IDX]);
+				
+				nLength := LEN(sFrame);
+				IF (nLength = 0)
+					OR (LEN(Q_sOut) + nLength > 255)
+				THEN
+					Q_bError := TRUE;
+					EXIT;
+				END_IF
+				Q_sOut := CONCAT(Q_sOut, sFrame);
+			END_FOR
+			IF NOT Q_bError
 			THEN
-				Q_bError := FALSE;
-				
-				CASE I_iCnt OF
-				(*===========================*)
-				0: 	IDX := 0;
-					Q_sOut :='';
-					
-					Q_bDone := TRUE;
-					RETURN;
-					
-				(*===========================*)
-				1: 	IDX := 1;
-					Q_sOut 	:=		F_RS485HB_TO_ASCII(I_diID,I_iInstID,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]);
-					
-					Q_bDone := TRUE;
-					
-				(*===========================*)
-				2: 	IDX := 1;
-					Q_sOut 	:=		F_RS485HB_TO_ASCII(I_diID,I_iInstID,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]);
-					IDX := 2;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					
-					Q_bDone := TRUE;
-					
-				(*===========================*)
-				3: 	IDX := 1;
-					Q_sOut 	:=		F_RS485HB_TO_ASCII(I_diID,I_iInstID,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]);
-					IDX := 2;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 3;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					
-					Q_bDone := TRUE;
-					
-				(*===========================*)
-				4: 	IDX := 1;
-					Q_sOut 	:=		F_RS485HB_TO_ASCII(I_diID,I_iInstID,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]);
-					IDX := 2;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 3;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 4;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					
-					Q_bDone := TRUE;
-					
-				(*===========================*)
-				5: 	IDX := 1;
-					Q_sOut 	:=		F_RS485HB_TO_ASCII(I_diID,I_iInstID,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]);
-					IDX := 2;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 3;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 4;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 5;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					
-					Q_bDone := TRUE;
-					
-				(*===========================*)
-				6: 	IDX := 1;
-					Q_sOut 	:=		F_RS485HB_TO_ASCII(I_diID,I_iInstID,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]);
-					IDX := 2;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 3;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 4;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 5;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 6;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					
-					Q_bDone := TRUE;
-					
-				(*===========================*)
-				7: 	IDX := 1;
-					Q_sOut 	:=		F_RS485HB_TO_ASCII(I_diID,I_iInstID,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]);
-					IDX := 2;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 3;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 4;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 5;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 6;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 7;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					
-					Q_bDone := TRUE;
-				
-				(*===========================*)
-				8: 	IDX := 1;
-					Q_sOut 	:=		F_RS485HB_TO_ASCII(I_diID,I_iInstID,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]);
-					IDX := 2;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 3;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 4;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 5;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 6;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 7;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					IDX := 8;
-					Q_sOut 	:=		CONCAT(Q_sOut,F_RS485HB_TO_ASCII(I_diID,I_iInstID+IDX-1,I_EnumHBUnitTX,I_EnumHBCmdTX,I_iP1[IDX],I_iP2[IDX],I_iP3[IDX],I_iP4[IDX]));
-					
-					Q_bDone := TRUE;	
-				END_CASE
-				
-				nLength :=	LEN(Q_sOut);
-				RETURN;
-			ELSE
-				Q_bError := TRUE;
+				Q_bDone := TRUE;
 			END_IF
 		ELSE
 			Q_bError := TRUE;
 		END_IF
 	ELSE
 		Q_bError := TRUE;
+	END_IF
+	IF Q_bError
+	THEN
+		Q_sOut := '';
 	END_IF
 ELSIF
 	NOT I_bExecute

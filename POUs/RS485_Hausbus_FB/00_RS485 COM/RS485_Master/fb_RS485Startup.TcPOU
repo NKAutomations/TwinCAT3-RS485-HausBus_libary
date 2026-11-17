@@ -59,7 +59,8 @@ END_VAR
       <ST><![CDATA[tonStartupVerz(
 	PT :=	I_tStartupVerz);
 
-tonTimeout();	
+tonTimeout(
+	PT := T#5S);
 
 rTrigStartupStart(CLK :=Q_bStartupDone
 						AND I_bExecute
@@ -146,6 +147,7 @@ CASE iStepStartup OF
 	
 	IF fbSerialConfig.Done
 	THEN
+		tonTimeout.IN := FALSE;
 		fbSerialConfig(
 			Execute:= 		FALSE); 
 			
@@ -153,14 +155,28 @@ CASE iStepStartup OF
 	ELSIF
 		fbSerialConfig.Error
 	THEN
+		tonTimeout.IN := FALSE;
 		Q_sState := 'Error fbSerialConfig ID: ';
 		Q_sState := CONCAT(Q_sState,INT_TO_STRING(fbSerialConfig.ErrorID));
+		Q_bError := TRUE;
 		iStepStartup := -2;	//Error
+	ELSIF
+		tonTimeout.Q
+	THEN
+		tonTimeout.IN := FALSE;
+		fbSerialConfig(
+			Execute:= FALSE);
+		Q_sState := 'Timeout fbSerialConfig';
+		Q_bError := TRUE;
+		iStepStartup := -2;
+	ELSE
+		tonTimeout.IN := TRUE;
 	END_IF
 
 (*=========================================================================*)
 3:	Q_sState := 'Serielle Klemme Reset Auführen';	
-		
+	tonTimeout.IN := TRUE;
+
 	fbSerialComReset(
 		Execute:= 		TRUE, 
 		pComIn := 		ADR(IQ_InData), 
@@ -173,13 +189,25 @@ CASE iStepStartup OF
 		
 	IF fbSerialComReset.Done
 	THEN
+		tonTimeout.IN := FALSE;
 		iStepStartup := 999;
 	ELSIF
 		fbSerialComReset.Error
 	THEN
+		tonTimeout.IN := FALSE;
 		Q_sState := 'Error fbSerialComReset ID: ';
 		Q_sState := CONCAT(Q_sState,INT_TO_STRING(fbSerialComReset.ErrorID));
+		Q_bError := TRUE;
 		iStepStartup := -3;	//Error
+	ELSIF
+		tonTimeout.Q
+	THEN
+		tonTimeout.IN := FALSE;
+		fbSerialComReset(
+			Execute:= FALSE);
+		Q_sState := 'Timeout fbSerialComReset';
+		Q_bError := TRUE;
+		iStepStartup := -3;
 	END_IF
 
 (*=========================================================================*)

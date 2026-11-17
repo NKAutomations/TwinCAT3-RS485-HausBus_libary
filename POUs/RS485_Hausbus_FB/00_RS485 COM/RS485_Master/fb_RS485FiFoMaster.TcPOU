@@ -86,6 +86,8 @@ VAR
 (*==========================================================================================================*)		
 	bFirstCycle					:BOOL := TRUE;
 	bStringSend					:BOOL := FALSE;
+	bConfigurationValid			:BOOL;
+	bFiFoTimeoutReported		:BOOL;
 	bBusBelastungstest			:BOOL := FALSE;
 	bBusAuslastung				:BOOL := TRUE;
 	bPingStart					:BOOL;
@@ -143,24 +145,33 @@ tonFiFoDoneTimeout(
 bUseRXCollisionDetection := 	I_bUseRXCollisionDetection;
 bUseTXCollisionDetection :=		I_bUseTXCollisionDetection;
 tVerzCollisionDetect :=			I_tVerzCollisionDetect;
+bConfigurationValid :=			(I_nMaxDevices >= 1)
+								AND (I_nMaxDevices <= cMaxRowCMDFiFo)
+								AND (I_pTxBuffer <> 0)
+								AND (I_pRxBuffer <> 0);
 
 (*============================================================================================*)		
 (* Collision detection, soll verhinddern, dass nicht gesendet wird, wenn Daten im Empfangsüpuffer sind *)
 (* Receive Collision Dectetion *)
-bRXCollisionDetected :=	(I_pRxBuffer^.Count > INT_TO_UINT(iMaxBufferBlocking) 
-						OR I_pRxBuffer^.FreeByte < (301 -INT_TO_UINT(iMaxBufferBlocking))
-						OR I_pRxBuffer^.blocked
-						OR I_pRxBuffer^.Error <> 0
-						OR fbReceive.StringReceived
-						(*OR sReceivedString <> ''*))
-						AND bUseRXCollisionDetection;
-						
-(* Transmit Collision Detection *)
-bTXCollisionDetected :=	(I_pTxBuffer^.Count > INT_TO_UINT(iMaxBufferBlocking) 
-						OR I_pTxBuffer^.FreeByte < (301 -INT_TO_UINT(iMaxBufferBlocking))
-						OR I_pTxBuffer^.blocked
-						OR I_pTxBuffer^.Error <> 0)
-						AND bUseTXCollisionDetection;
+IF bConfigurationValid
+THEN
+	bRXCollisionDetected :=	(I_pRxBuffer^.Count > INT_TO_UINT(iMaxBufferBlocking)
+							OR I_pRxBuffer^.FreeByte < (301 -INT_TO_UINT(iMaxBufferBlocking))
+							OR I_pRxBuffer^.blocked
+							OR I_pRxBuffer^.Error <> 0
+							OR fbReceive.StringReceived)
+							AND bUseRXCollisionDetection;
+
+	(* Transmit Collision Detection *)
+	bTXCollisionDetected :=	(I_pTxBuffer^.Count > INT_TO_UINT(iMaxBufferBlocking)
+							OR I_pTxBuffer^.FreeByte < (301 -INT_TO_UINT(iMaxBufferBlocking))
+							OR I_pTxBuffer^.blocked
+							OR I_pTxBuffer^.Error <> 0)
+							AND bUseTXCollisionDetection;
+ELSE
+	bRXCollisionDetected := TRUE;
+	bTXCollisionDetected := TRUE;
+END_IF
 						
 (* Collision Detection Verzögern *)						
 tonCollisionFree(
@@ -198,7 +209,7 @@ FOR i := 1 TO cMaxRowCMDFiFo BY 1 DO
 			icntFiFo := icntFiFo +1;
 		END_IF
 	END_IF
-	
+
 	(* Zählen wie viele Dones gesetzt sind
 		wenn alle True sind, ist komplett fertig gesendet *)
 	IF i <= I_nMaxDevices
@@ -211,9 +222,14 @@ FOR i := 1 TO cMaxRowCMDFiFo BY 1 DO
 END_FOR
 
 (* Alle FiFo Rows Done *)
-bFiFoDone := iCntFiFoDone = I_nMaxDevices;
+bFiFoDone := bConfigurationValid
+				AND (iCntFiFoDone = I_nMaxDevices);
 tonFiFoDoneTimeout.IN :=	NOT bFiFoDone
 							AND iStepFiFo = 0;
+IF bFiFoDone
+THEN
+	bFiFoTimeoutReported := FALSE;
+END_IF
 
 (*============================================================================================*)	
 (* Manuelles Senden *)
@@ -221,6 +237,8 @@ rTrigSendManuell(
 	CLK := I_bSendManuell);
 
 (*============================================================================================*)
+IF bConfigurationValid
+THEN
 CASE iStepFiFo OF
 -1:	sStep := 'FiFo INIT';
 	bFirstCycle := FALSE;
@@ -261,11 +279,13 @@ CASE iStepFiFo OF
 	(* Notfallschaltung, falls mal ein bDone hängt
 		zb. durch Gerätebaustein fehler *)
 	IF tonFiFoDoneTimeout.Q
+		AND NOT bFiFoTimeoutReported
 	THEN
 		dwCntTimeout := dwCntTimeout+1;
-		FOR h := 1 TO I_nMaxDevices BY 1 DO
-			Q_bSendDoneFiFo[h] :=TRUE;
-		END_FOR
+		bFiFoTimeoutReported := TRUE;
+		Q_bError := TRUE;
+		Q_bDone := FALSE;
+		sStep := 'ERROR - FIFO acknowledgement timeout';
 	END_IF
 					
 	IF bFirstCycle
@@ -377,7 +397,6 @@ CASE iStepFiFo OF
 		ELSE
 		(* Senden *)
 		Q_bSendDoneFiFo[iFiFoRow] :=FALSE;
-		
 			IF bCollisionFree
 			THEN
 				(* Normaler Sendevorgang TX *)
@@ -396,27 +415,33 @@ CASE iStepFiFo OF
 	Q_bBusy := TRUE;
 	tonTimeout.IN := fbSend.Busy;
 	
-	IF NOT fbSend.Busy
-		AND NOT fbReceive.StringReceived
-	THEN	
-		(* Normaler Sendevorgang TX *)
-		sString := '';
-		tonSend.IN := FALSE;
-		bStringSend := FALSE;
-		iStepFiFo := iStepFiFo+1;
-	ELSIF
-		(fbSend.Error >0)
-		AND NOT (fbSend.Error = 2)
+	IF fbSend.Error <> 0
 	THEN
 		sStep := CONCAT('ERROR-',sStep);
 		sStep := CONCAT(sStep,'- ');
 		sStep := CONCAT(sStep,INT_TO_STRING(fbSend.Error));
+		Q_bError := TRUE;
+		Q_bDone := FALSE;
+		Q_bBusy := FALSE;
+		bStringSend := FALSE;
 		iStepFiFo := -2;
 	ELSIF
 		tonTimeout.Q
 	THEN
 		sStep := CONCAT('ERROR- Timeout',sStep);
+		Q_bError := TRUE;
+		Q_bDone := FALSE;
+		Q_bBusy := FALSE;
+		bStringSend := FALSE;
 		iStepFiFo := -2;
+	ELSIF
+		NOT fbSend.Busy
+	THEN
+		(* Normaler Sendevorgang TX *)
+		sString := '';
+		tonSend.IN := FALSE;
+		bStringSend := FALSE;
+		iStepFiFo := iStepFiFo+1;
 	END_IF
 	
 (*============================================================================================*)		
@@ -481,31 +506,34 @@ CASE iStepFiFo OF
 	Q_bBusy := TRUE;
 	tonTimeout.IN := fbSend.Busy;
 	
-	IF NOT fbSend.Busy
-		(*AND NOT fbReceive.StringReceived*)
-	THEN
-		tonSend.IN := FALSE;
-		bStringSend := FALSE;
-				
-		IF NOT fbReceive.StringReceived
-			AND bCollisionFree
-		THEN
-			iStepFiFo := iStepFiFo+1;
-		END_IF
-		
-	ELSIF
-		(fbSend.Error >0)
-		AND NOT (fbSend.Error = 2)
+	IF fbSend.Error <> 0
 	THEN
 		sStep := CONCAT('ERROR-',sStep);
 		sStep := CONCAT(sStep,'- ');
 		sStep := CONCAT(sStep,INT_TO_STRING(fbSend.Error));
+		Q_bError := TRUE;
+		Q_bDone := FALSE;
+		Q_bBusy := FALSE;
+		bStringSend := FALSE;
 		iStepFiFo := -2;
 	ELSIF
 		tonTimeout.Q
 	THEN
 		sStep := CONCAT('ERROR- Timeout',sStep);
+		Q_bError := TRUE;
+		Q_bDone := FALSE;
+		Q_bBusy := FALSE;
+		bStringSend := FALSE;
 		iStepFiFo := -2;
+	ELSIF
+		NOT fbSend.Busy
+	THEN
+		tonSend.IN := FALSE;
+		bStringSend := FALSE;
+		IF bCollisionFree
+		THEN
+			iStepFiFo := iStepFiFo+1;
+		END_IF
 	END_IF
 	
 (*============================================================================================*)		
@@ -565,6 +593,7 @@ CASE iStepFiFo OF
 ELSE
 (*============================================================================================*)
 	Q_bError := TRUE;
+	Q_bDone := FALSE;
 	Q_bBusy := FALSE;
 	bBusyMem := FALSE;
 	tonTimeout.IN := FALSE;
@@ -574,10 +603,25 @@ ELSE
 		iStepFiFo := 0;
 	END_IF
 END_CASE
+ELSE
+	Q_bBusy := FALSE;
+	bBusyMem := FALSE;
+	bStringSend := FALSE;
+	tonTimeout.IN := FALSE;
+	Q_bError := TRUE;
+	IF (I_nMaxDevices < 1)
+		OR (I_nMaxDevices > cMaxRowCMDFiFo)
+	THEN
+		sStep := 'ERROR - I_nMaxDevices out of range';
+	ELSE
+		sStep := 'ERROR - RS485 buffer pointer is NULL';
+	END_IF
+END_IF
 
 (*============================================================================================*)	
 (* Nur Senden, wenn nicht Empfangen wird *)
-IF bStringSend
+IF bConfigurationValid
+	AND bStringSend
 THEN
 	IF bActivateSend
 	THEN
@@ -587,7 +631,8 @@ THEN
 			TXbuffer:= 		I_pTxBuffer^);
 	END_IF
 	
-ELSE
+ELSIF bConfigurationValid
+THEN
 	IF bActivateReceive
 	THEN
 		(* Empfangen *)
@@ -660,11 +705,20 @@ END_CASE]]></ST>
         <ST><![CDATA[(*============================================================================================*)	
 (* Busauslastung Prüfen *)
 
-fbBusAuslastung(
-	I_bExcecute:= 	bBusAuslastung, 
-	I_nWert:= 		UINT_TO_LREAL(I_pTxBuffer^.Count), 
-	I_nFilterWert:= 50, 
-	Q_nFilter=> 	Q_lrBusAuslastung);
+IF I_pTxBuffer <> 0
+THEN
+	fbBusAuslastung(
+		I_bExcecute:= 	bBusAuslastung,
+		I_nWert:= 		UINT_TO_LREAL(I_pTxBuffer^.Count),
+		I_nFilterWert:= 50,
+		Q_nFilter=> 	Q_lrBusAuslastung);
+ELSE
+	fbBusAuslastung(
+		I_bExcecute:= FALSE,
+		I_nWert:= 0,
+		I_nFilterWert:= 50,
+		Q_nFilter=> Q_lrBusAuslastung);
+END_IF
 	
 	
 fbRS485Search(

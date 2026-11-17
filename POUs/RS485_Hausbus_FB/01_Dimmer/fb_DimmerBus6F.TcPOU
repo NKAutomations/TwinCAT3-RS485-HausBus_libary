@@ -257,6 +257,8 @@ END_CASE
 IF fbUniHBComOperator.Q_bActivateSend
 THEN
 	Q_sFiFoSend :=	sFiFoSend;
+ELSE
+	Q_sFiFoSend := '';
 END_IF
 	
 (*///////////////////////////////////////////////////////////*)

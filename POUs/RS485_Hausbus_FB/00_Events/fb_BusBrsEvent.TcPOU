@@ -46,8 +46,6 @@ VAR
 		
 	iFindString	:int;
 	icnt					:INT ;
-	r_trigCnt				:r_trig;
-		
 	bStartupStart			:BOOL;
 	bStartupDone			:BOOL;
 	
@@ -60,12 +58,12 @@ VAR
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[r_trigCnt();
+      <ST><![CDATA[      bUpdated := FALSE;
 
 (* Automatische Fehlererkennung *)
 IF NOT I_bExecute
-	OR (I_diID = 0)
-	OR (I_iInstID = 0)
+	OR (I_diID <= 0)
+	OR (I_iInstID <= 0)
 THEN
 	iStartup := 0;
 END_IF
@@ -80,15 +78,14 @@ CASE iStartup OF
 	bStartupDone := FALSE;
 	bStartupStart := FALSE;
 	sTemp2 :=sTemp1 := '0';
-	r_trigCnt.CLK := FALSE;
 	bNeedProcess := FALSE;
 	sLastString := '';
 	
 	IF I_bExecute
 		AND NOT bStartupDone
 		AND NOT I_bReset
-		AND (I_diID <> 0)
-		AND (I_iInstID <>0)
+		AND (I_diID > 0)
+		AND (I_iInstID > 0)
 	THEN
 		bStartupStart := TRUE;
 		iStartup := iStartup +10;
@@ -119,7 +116,7 @@ CASE iStartup OF
 			
 			IF iFindString>0
 			THEN
-				r_trigCnt.CLK := TRUE;
+				bUpdated := TRUE;
 				startPos := iFindString; // Position des Suchstrings       
 				(*Temperatur steht direkt nach dem Suchstring*)
 				startPos := startPos + LEN(findStringTemp); (*Startposition für Temperatur*)
@@ -127,8 +124,6 @@ CASE iStartup OF
 				sTemp1 := MID(I_sReceivedString, 5, startPos);
 				(*Dezimalpunkt für STRING_TO_LREAL anpassen, falls nötig *)
 				sTemp1 := REPLACE(sTemp1, '.',1,3); (* 1. Vorkommen ersetzen *)
-			ELSE
-				r_trigCnt.CLK := FALSE;
 			END_IF
 			
 			sLastString :=	I_sReceivedString;	(* Letzten String Speichern *)
@@ -138,15 +133,12 @@ CASE iStartup OF
 	Q_lrBrs := STRING_TO_LREAL(sTemp1);
 
 	(* Counter für Diagnose *)
-	IF r_trigCnt.Q
+	IF bUpdated
 	THEN
 		Q_sLastUpdate :=	sGlobClock_SMH;	(* Globale Uhrzeit SMH*)
 		
-		bUpdated := TRUE;
 		sTemp2 :=	I_sReceivedString;	(* Speichern der Werte *)
 		icnt := icnt+1;
-	ELSE
-		bUpdated := FALSE;
 	END_IF
 	
 END_CASE

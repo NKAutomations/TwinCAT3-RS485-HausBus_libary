@@ -114,6 +114,7 @@ VAR
 	bStartupDone			:BOOL;
 	bEventStartupDone		:BOOL;
 	bMemWifi				:BOOL;
+	bInputConfigError		:BOOL;
 	
 	iCntStartupDone			:int;
 
@@ -124,6 +125,8 @@ END_VAR]]></Declaration>
 (* Parameter *)
 tPingTimer :=			I_tPingTime;
 bCheckPing :=			I_bUsePing;
+bInputConfigError :=	(I_stInput.iAnzTempSens < 0)
+						OR (I_stInput.iAnzTempSens > 4);
 
 (*///////////////////////////////////////////////////////////*)
 (* Reset *)
@@ -211,12 +214,15 @@ END_CASE
 IF fbUniHBComOperator.Q_bActivateSend
 THEN
 	Q_sFiFoSend :=	sFiFoSend;
+ELSE
+	Q_sFiFoSend := '';
 END_IF
 	
 (*///////////////////////////////////////////////////////////*)
 (* Outputs *)
 Q_stOutput.bCOM 		:=	fbUniHBComOperator.Q_bCom;
-Q_stOutput.bError 		:= 	fbUniHBComOperator.Q_bError;
+Q_stOutput.bError 		:= 	fbUniHBComOperator.Q_bError
+							OR bInputConfigError;
 Q_stOutput.bStartupDone	:=	fbUniHBComOperator.Q_bOP;
 Q_stOutput.dwChanges	:=	fbUniHBComOperator.Q_dwChanges;
 ]]></ST>
@@ -230,15 +236,19 @@ Q_stOutput.dwChanges	:=	fbUniHBComOperator.Q_dwChanges;
 IF fbUniHBComOperator.Q_bResetEvents
 THEN
 	sReceived := '';
-		
-	FOR i :=1 TO I_stInput.iAnzTempSens BY 1 DO 
-		Q_stOutput.lrTemp[i] := 0;
-	END_FOR
+
+	IF NOT bInputConfigError
+	THEN
+		FOR i :=1 TO I_stInput.iAnzTempSens BY 1 DO
+			Q_stOutput.lrTemp[i] := 0;
+		END_FOR
+	END_IF
 ELSE
 	sReceived := I_StringReceived;
 END_IF
 
-IF I_stInput.iAnzTempSens > 0
+IF (I_stInput.iAnzTempSens > 0)
+	AND NOT bInputConfigError
 THEN
 	iCntStartupDone := 0;
 	
@@ -258,6 +268,8 @@ THEN
 			iCntStartupDone := iCntStartupDone +1;
 		END_IF
 	END_FOR
+ELSE
+	iCntStartupDone := 0;
 END_IF
 
 fbBusPingEvent(
@@ -267,7 +279,8 @@ fbBusPingEvent(
 	I_sReceivedString		:= 	sReceived, 
 	Q_bOut					=> 	);
 	
-bEventStartupDone :=	(iCntStartupDone = I_stInput.iAnzTempSens)
+bEventStartupDone :=	NOT bInputConfigError
+						AND (iCntStartupDone = I_stInput.iAnzTempSens)
 						AND fbBusPingEvent.Q_bStartupDone;
 						]]></ST>
       </Implementation>

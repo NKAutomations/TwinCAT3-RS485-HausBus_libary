@@ -55,7 +55,7 @@ END_VAR
       <ST><![CDATA[
 (* Automatische Fehlererkennung *)
 IF NOT I_bExecute
-	OR (I_diID = 0)
+	OR (I_diID <= 0)
 THEN
 	iStartup := 0;
 END_IF
@@ -76,7 +76,7 @@ CASE iStartup OF
 	IF I_bExecute
 		AND NOT bStartupDone
 		AND NOT I_bReset
-		AND (I_diID <> 0)
+		AND (I_diID > 0)
 	THEN
 		bStartupStart := TRUE;
 		iStartup := iStartup +10;
@@ -87,6 +87,7 @@ CASE iStartup OF
 	
 	findString0 := F_RS485HB_TO_ASCII_RX_PING(
 						I_diID			:= I_diID);
+	findString0 := CONCAT(findString0, '.');
 						
 	iStartup := 999;
 	

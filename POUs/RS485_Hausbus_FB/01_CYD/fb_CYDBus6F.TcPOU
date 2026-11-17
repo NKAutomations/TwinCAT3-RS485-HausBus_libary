@@ -310,6 +310,8 @@ END_CASE
 IF bActivateSend
 THEN
 	Q_sFiFoSend :=	sFiFoSend;
+ELSE
+	Q_sFiFoSend := '';
 END_IF
 
 (*============================================================================================*)	

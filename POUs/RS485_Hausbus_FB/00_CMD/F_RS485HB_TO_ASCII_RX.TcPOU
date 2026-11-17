@@ -42,6 +42,8 @@ END_VAR
     <Implementation>
       <ST><![CDATA[bInvalidUnit := FALSE;
 bInvalidCMD := FALSE;
+      Q_sOut := '';
+      F_RS485HB_TO_ASCII_RX := '';
 
 CASE I_EnumHBUnitTX OF
 E_EnumHBUnitTX.E_HB_UNIT_SYS:  sUnit :=	GVL_HausBus_ASCII_CONSTANT.HB_UNIT_SYS; 	iParam := 0;	
